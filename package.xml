@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypes="xml"?>
+<package format="3">
+  <name>rexbot</name>
+  <version>1.0.0</version>
+  <description>Multi-floor robot navigation with elevator simulation</description>
+  
+  <maintainer email="user@example.com">RexBot Team</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <!-- C++ dependencies -->
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>gazebo_ros</depend>
+
+  <!-- Python dependencies -->
+  <depend>rclpy</depend>
+
+  <!-- Build dependencies -->
+  <build_depend>gazebo_dev</build_depend>
+
+  <!-- Test dependencies -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <gazebo_ros plugin_path="${prefix}/lib" gazebo_model_path="${prefix}/share/${package_name}/models"/>
+  </export>
+</package>
