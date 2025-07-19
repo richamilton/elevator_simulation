@@ -37,6 +37,49 @@ namespace gazebo
         stop_duration_dist = std::uniform_real_distribution<double>(10.0, 15.0);
       }
 
+      void LoadConfiguration()
+      {
+        // Declare parameters with default values
+        this->ros_node->declare_parameter("floor_heights", std::vector<double>{0.0, 2.5, 5.0, 7.5});
+        this->ros_node->declare_parameter("movement_speed", 1.0);
+        this->ros_node->declare_parameter("door_operation_time", 2.0);
+        this->ros_node->declare_parameter("stop_duration_min", 10.0);
+        this->ros_node->declare_parameter("stop_duration_max", 15.0);
+        this->ros_node->declare_parameter("stop_duration_multiplier", 1.0);
+        this->ros_node->declare_parameter("initial_floor", 0);
+        this->ros_node->declare_parameter("initial_doors_open", true);
+        this->ros_node->declare_parameter("log_level", "INFO");
+
+        // Load parameters
+        this->floor_heights = this->ros_node->get_parameter("floor_heights").as_double_array();
+        this->movement_speed = this->ros_node->get_parameter("movement_speed").as_double();
+        this->door_operation_time = this->ros_node->get_parameter("door_operation_time").as_double();
+        
+        double stop_min = this->ros_node->get_parameter("stop_duration_min").as_double();
+        double stop_max = this->ros_node->get_parameter("stop_duration_max").as_double();
+        double multiplier = this->ros_node->get_parameter("stop_duration_multiplier").as_double();
+        
+        this->config_initial_floor = this->ros_node->get_parameter("initial_floor").as_int();
+        this->config_initial_doors_open = this->ros_node->get_parameter("initial_doors_open").as_bool();
+        
+        // Apply multiplier to stop duration range
+        this->stop_duration_min = stop_min * multiplier;
+        this->stop_duration_max = stop_max * multiplier;
+        
+        // Update random distribution
+        this->stop_duration_dist = std::uniform_real_distribution<double>(
+            this->stop_duration_min, this->stop_duration_max);
+
+        RCLCPP_INFO(this->ros_node->get_logger(), 
+                   "Elevator %d configuration loaded - Speed: %.1f m/s, Stop duration: %.1f-%.1f s", 
+                   elevator_id, movement_speed, stop_duration_min, stop_duration_max);
+      }
+
+      double GetRandomStopDuration()
+      {
+        return this->stop_duration_dist(generator);
+      }
+
       void Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
       {
         // Store the pointer to the model
@@ -63,6 +106,9 @@ namespace gazebo
         std::string node_name = "elevator_controller_" + std::to_string(elevator_id);
         this->ros_node = rclcpp::Node::make_shared(node_name);
 
+        // Load configuration parameters
+        this->LoadConfiguration();
+
         // Create ROS2 publishers
         std::string ns = "elevator_" + std::to_string(elevator_id);
         this->current_floor_pub = this->ros_node->create_publisher<std_msgs::msg::Int32>(
@@ -72,22 +118,23 @@ namespace gazebo
         this->car_position_pub = this->ros_node->create_publisher<geometry_msgs::msg::PoseStamped>(
             ns + "/car_position", 10);
 
-        // Initialize elevator parameters
-        this->floor_heights = {0.0, 2.5, 5.0, 7.5}; // Ground, Floor 1, Floor 2, Floor 3
-        this->current_floor = 0;
-        this->target_floor = 0;
+        // Initialize elevator parameters from configuration
+        this->current_floor = this->config_initial_floor;
+        this->target_floor = this->config_initial_floor;
         this->current_state = IDLE;
-        this->doors_open = true;
-        this->movement_speed = 1.0; // m/s
-        this->door_operation_time = 2.0; // seconds
+        this->doors_open = this->config_initial_doors_open;
         
         // Get initial position
         this->initial_pose = this->model->WorldPose();
         
+        // Set initial height based on configuration
+        double initial_height = this->floor_heights[this->config_initial_floor];
+        this->SetElevatorHeight(initial_height);
+        
         // Initialize timing
         this->last_update_time = this->world->SimTime();
         this->state_start_time = this->world->SimTime();
-        this->stop_duration = stop_duration_dist(generator);
+        this->stop_duration = this->GetRandomStopDuration();
 
         // Get joint pointers
         this->left_door_joint = this->model->GetJoint("left_door_joint");
@@ -274,7 +321,7 @@ namespace gazebo
           this->SetDoorPosition(0.6);
           this->current_state = IDLE;
           this->state_start_time = current_time;
-          this->stop_duration = stop_duration_dist(generator);
+          this->stop_duration = this->GetRandomStopDuration();
           this->ScheduleNextMovement();
           RCLCPP_INFO(this->ros_node->get_logger(), 
                      "Elevator %d: Doors opened at floor %d", elevator_id, current_floor);
@@ -370,6 +417,12 @@ namespace gazebo
       double movement_speed;
       double door_operation_time;
       double stop_duration;
+      double stop_duration_min;
+      double stop_duration_max;
+      
+      // Configuration parameters
+      int config_initial_floor;
+      bool config_initial_doors_open;
       
       ignition::math::Pose3d initial_pose;
       common::Time last_update_time;
