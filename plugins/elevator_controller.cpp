@@ -136,17 +136,23 @@ namespace gazebo
         this->state_start_time = this->world->SimTime();
         this->stop_duration = this->GetRandomStopDuration();
 
-        // Get joint pointers
-        this->left_door_joint = this->model->GetJoint("left_door_joint");
-        this->right_door_joint = this->model->GetJoint("right_door_joint");
+        this->door_joint = this->model->GetJoint("door_joint");
 
-        if (!this->left_door_joint || !this->right_door_joint)
+        if (!this->door_joint)
         {
-          RCLCPP_ERROR(this->ros_node->get_logger(), 
-                      "ElevatorController: Could not find door joints!");
-          return;
+            RCLCPP_ERROR(this->ros_node->get_logger(), 
+                        "ElevatorController: Could not find door joint!");
+            return;
         }
 
+        if (this->doors_open)
+        {
+          if (this->door_joint)
+          {
+              this->SetDoorPosition(-1.2); // Start open
+          }
+        }
+        
         // Create executor thread for ROS2
         this->executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
         this->executor->add_node(this->ros_node);
@@ -212,11 +218,11 @@ namespace gazebo
         double elapsed = (current_time - this->state_start_time).Double();
         if (elapsed >= this->stop_duration)
         {
-          // Start closing doors
-          this->current_state = CLOSING_DOORS;
-          this->state_start_time = current_time;
-          RCLCPP_INFO(this->ros_node->get_logger(), 
-                     "Elevator %d: Starting to close doors", elevator_id);
+            // Start closing doors (not moving directly)
+            this->current_state = CLOSING_DOORS;
+            this->state_start_time = current_time;
+            RCLCPP_INFO(this->ros_node->get_logger(), 
+                      "Elevator %d: Starting to close door", elevator_id);
         }
       }
 
@@ -227,86 +233,75 @@ namespace gazebo
         
         if (progress >= 1.0)
         {
-          // Doors fully closed
-          this->doors_open = false;
-          this->SetDoorPosition(0.0);
+            // Door fully closed
+            this->doors_open = false;
+            this->SetDoorPosition(0.0);
+            
+            // Start moving
+            if (this->target_floor > this->current_floor)
+            {
+                this->current_state = MOVING_UP;
+                RCLCPP_INFO(this->ros_node->get_logger(), 
+                          "Elevator %d: Moving up to floor %d", elevator_id, target_floor);
+            }
+            else if (this->target_floor < this->current_floor)
+            {
+                this->current_state = MOVING_DOWN;
+                RCLCPP_INFO(this->ros_node->get_logger(), 
+                          "Elevator %d: Moving down to floor %d", elevator_id, target_floor);
+            }
+            this->state_start_time = current_time;
+        }
+        else
+        {
+            // Animate door closing (0 to -1.2)
+            double door_pos = -1.2 + (progress * 1.2);
+            this->SetDoorPosition(door_pos);
+        }
+      }
+      
+      void HandleMovingUpState(common::Time current_time, double dt)
+      {
+          double target_height = this->floor_heights[this->target_floor];
+          double current_height = this->model->WorldPose().Pos().Z();
           
-          // Start moving
-          if (this->target_floor > this->current_floor)
+          if (current_height >= target_height - 0.05)
           {
-            this->current_state = MOVING_UP;
-            RCLCPP_INFO(this->ros_node->get_logger(), 
-                       "Elevator %d: Moving up to floor %d", elevator_id, target_floor);
-          }
-          else if (this->target_floor < this->current_floor)
-          {
-            this->current_state = MOVING_DOWN;
-            RCLCPP_INFO(this->ros_node->get_logger(), 
-                       "Elevator %d: Moving down to floor %d", elevator_id, target_floor);
+              // Arrived - start opening doors
+              this->model->SetLinearVel(ignition::math::Vector3d(0, 0, 0));
+              this->current_floor = this->target_floor;
+              this->current_state = OPENING_DOORS;  // Go to door opening, not IDLE
+              this->state_start_time = current_time;
+              RCLCPP_INFO(this->ros_node->get_logger(), 
+                        "Elevator %d: Arrived at floor %d, opening door", elevator_id, current_floor);
           }
           else
           {
-            // Same floor, go back to idle
-            this->current_state = OPENING_DOORS;
+              // Keep moving up
+              this->model->SetLinearVel(ignition::math::Vector3d(0, 0, this->movement_speed));
           }
-          this->state_start_time = current_time;
-        }
-        else
-        {
-          // Animate door closing
-          double door_pos = (1.0 - progress) * 0.6; // 0.6m is full open position
-          this->SetDoorPosition(door_pos);
-        }
-      }
-
-      void HandleMovingUpState(common::Time current_time, double dt)
-      {
-        double target_height = this->floor_heights[this->target_floor];
-        double current_height = this->model->WorldPose().Pos().Z();
-        
-        if (current_height >= target_height - 0.01) // Close enough
-        {
-          // Arrived at target floor
-          this->current_floor = this->target_floor;
-          this->SetElevatorHeight(target_height);
-          this->current_state = OPENING_DOORS;
-          this->state_start_time = current_time;
-          RCLCPP_INFO(this->ros_node->get_logger(), 
-                     "Elevator %d: Arrived at floor %d", elevator_id, current_floor);
-        }
-        else
-        {
-          // Continue moving up
-          double new_height = current_height + this->movement_speed * dt;
-          if (new_height > target_height)
-            new_height = target_height;
-          this->SetElevatorHeight(new_height);
-        }
       }
 
       void HandleMovingDownState(common::Time current_time, double dt)
       {
-        double target_height = this->floor_heights[this->target_floor];
-        double current_height = this->model->WorldPose().Pos().Z();
-        
-        if (current_height <= target_height + 0.01) // Close enough
-        {
-          // Arrived at target floor
-          this->current_floor = this->target_floor;
-          this->SetElevatorHeight(target_height);
-          this->current_state = OPENING_DOORS;
-          this->state_start_time = current_time;
-          RCLCPP_INFO(this->ros_node->get_logger(), 
-                     "Elevator %d: Arrived at floor %d", elevator_id, current_floor);
-        }
-        else
-        {
-          // Continue moving down
-          double new_height = current_height - this->movement_speed * dt;
-          if (new_height < target_height)
-            new_height = target_height;
-          this->SetElevatorHeight(new_height);
-        }
+          double target_height = this->floor_heights[this->target_floor];
+          double current_height = this->model->WorldPose().Pos().Z();
+          
+          if (current_height <= target_height + 0.05)
+          {
+              // Arrived - start opening doors
+              this->model->SetLinearVel(ignition::math::Vector3d(0, 0, 0));
+              this->current_floor = this->target_floor;
+              this->current_state = OPENING_DOORS;  // Go to door opening, not IDLE
+              this->state_start_time = current_time;
+              RCLCPP_INFO(this->ros_node->get_logger(), 
+                        "Elevator %d: Arrived at floor %d, opening door", elevator_id, current_floor);
+          }
+          else
+          {
+              // Keep moving down
+              this->model->SetLinearVel(ignition::math::Vector3d(0, 0, -this->movement_speed));
+          }
       }
 
       void HandleOpeningDoorsState(common::Time current_time)
@@ -316,51 +311,52 @@ namespace gazebo
         
         if (progress >= 1.0)
         {
-          // Doors fully open
-          this->doors_open = true;
-          this->SetDoorPosition(0.6);
-          this->current_state = IDLE;
-          this->state_start_time = current_time;
-          this->stop_duration = this->GetRandomStopDuration();
-          this->ScheduleNextMovement();
-          RCLCPP_INFO(this->ros_node->get_logger(), 
-                     "Elevator %d: Doors opened at floor %d", elevator_id, current_floor);
+            // Door fully open
+            this->doors_open = true;
+            this->SetDoorPosition(-1.2);
+            this->current_state = IDLE;
+            this->state_start_time = current_time;
+            this->stop_duration = this->GetRandomStopDuration();
+            this->ScheduleNextMovement();
+            RCLCPP_INFO(this->ros_node->get_logger(), 
+                      "Elevator %d: Door opened at floor %d", elevator_id, current_floor);
         }
         else
         {
-          // Animate door opening
-          double door_pos = progress * 0.6; // 0.6m is full open position
-          this->SetDoorPosition(door_pos);
+            // Animate door opening (-1.2 to 0)
+            double door_pos = progress * -1.2;
+            this->SetDoorPosition(door_pos);
         }
       }
 
       void SetDoorPosition(double position)
       {
-        if (this->left_door_joint && this->right_door_joint)
+        if (this->door_joint)
         {
-          this->left_door_joint->SetPosition(0, -position);
-          this->right_door_joint->SetPosition(0, position);
+            // position: 0 = closed, -1.2 = fully open
+            this->door_joint->SetPosition(0, position);
         }
-      }
-
-      void SetElevatorHeight(double height)
-      {
-        ignition::math::Pose3d current_pose = this->model->WorldPose();
-        ignition::math::Pose3d new_pose = current_pose;
-        new_pose.Pos().Z() = height;
-        this->model->SetWorldPose(new_pose);
       }
 
       void ScheduleNextMovement()
       {
-        // Simple random floor selection
-        std::uniform_int_distribution<int> floor_dist(0, 3);
-        do {
-          this->target_floor = floor_dist(generator);
-        } while (this->target_floor == this->current_floor);
-        
-        RCLCPP_INFO(this->ros_node->get_logger(), 
-                   "Elevator %d: Next target floor: %d", elevator_id, target_floor);
+          // Simple random floor selection
+          std::uniform_int_distribution<int> floor_dist(0, 3);
+          do {
+              this->target_floor = floor_dist(generator);
+          } while (this->target_floor == this->current_floor);
+          
+          RCLCPP_INFO(this->ros_node->get_logger(), 
+                    "Elevator %d: Next target floor: %d", elevator_id, target_floor);
+      }
+
+      void SetElevatorHeight(double target_height)
+      {
+          ignition::math::Pose3d current_pose = this->model->WorldPose();
+          ignition::math::Pose3d new_pose = current_pose;
+          new_pose.Pos().Z() = target_height;
+          new_pose.Rot() = ignition::math::Quaterniond::Identity; // Keep upright
+          this->model->SetWorldPose(new_pose);
       }
 
       void PublishStatus()
@@ -395,8 +391,7 @@ namespace gazebo
       // Private member variables
       physics::ModelPtr model;
       physics::WorldPtr world;
-      physics::JointPtr left_door_joint;
-      physics::JointPtr right_door_joint;
+      physics::JointPtr door_joint;
       
       std::shared_ptr<rclcpp::Node> ros_node;
       rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr current_floor_pub;
