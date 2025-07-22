@@ -355,7 +355,6 @@ namespace gazebo
           ignition::math::Pose3d current_pose = this->model->WorldPose();
           ignition::math::Pose3d new_pose = current_pose;
           new_pose.Pos().Z() = target_height;
-          new_pose.Rot() = ignition::math::Quaterniond::Identity; // Keep upright
           this->model->SetWorldPose(new_pose);
       }
 

@@ -130,6 +130,25 @@ def generate_launch_description():
             )
         ]
     )
+
+    # Read the base model file
+    with open(elevator_car_model, 'r') as f:
+        base_sdf_content = f.read()
+
+    # Create modified SDF with plugin for this elevator
+        plugin_xml = f'''
+    <plugin name="elevator_controller" filename="libelevator_controller.so">
+        <elevator_id>1</elevator_id>
+    </plugin>
+</model>'''
+        
+        # Insert plugin before closing </model> tag
+        modified_sdf = base_sdf_content.replace('</model>', plugin_xml)
+        
+        # Write temporary file for this elevator
+        temp_sdf_path = f"/tmp/elevator_1_model.sdf"
+        with open(temp_sdf_path, 'w') as f:
+            f.write(modified_sdf)
     
     # Spawn elevator car
     spawn_elevator = TimerAction(
@@ -138,10 +157,14 @@ def generate_launch_description():
             ExecuteProcess(
                 cmd=['ros2', 'run', 'gazebo_ros', 'spawn_entity.py',
                      '-entity', ['elevator_', LaunchConfiguration('elevator_id')],
-                     '-file', elevator_car_model,
+                     '-file', temp_sdf_path,
                      '-x', LaunchConfiguration('x_pos'),
                      '-y', LaunchConfiguration('y_pos'),
-                     '-z', '0.0'],  # Will be adjusted by plugin based on initial_floor
+                     '-z', '0.0',  # Will be adjusted by plugin based on initial_floor
+                     '-R', '0.0',    # Must be float format
+                     '-P', '0.0',
+                     '-Y', '1.57'  # Rotate 90 degrees around Z axis (in radians)
+                ],
                 output='screen',
                 name='spawn_elevator'
             )

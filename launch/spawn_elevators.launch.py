@@ -158,7 +158,8 @@ def generate_launch_description():
                          '-file', temp_sdf_path,
                          '-x', str(position['x']),
                          '-y', str(position['y']),
-                         '-z', str(position['z'] + initial_height)],
+                         '-z', str(position['z'] + initial_height),
+                         '-Y', str(position.get('Y', 0.0))],  # Use Y if provided
                     output='screen',
                     name=f'spawn_elevator_{config["id"]}'
                 )

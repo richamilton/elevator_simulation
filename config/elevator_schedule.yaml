@@ -28,7 +28,7 @@ elevators:
       x: 0.0
       y: 0.0
       z: 0.0
-    initial_floor: 0
+      Y: 0
     initial_state: "IDLE"
     initial_doors_open: true
     schedule:
@@ -42,6 +42,7 @@ elevators:
       x: 5.0                   # 5 meters away from elevator 1
       y: 0.0
       z: 0.0
+      Y: 0
     initial_floor: 1
     initial_state: "IDLE"
     initial_doors_open: true
@@ -56,6 +57,7 @@ elevators:
       x: 10.0                  # 10 meters away from elevator 1
       y: 0.0
       z: 0.0
+      Y: 3.14159  # Rotate 180 degrees around Z axis (in radians)
     initial_floor: 2
     initial_state: "IDLE"
     initial_doors_open: false   # Starts with doors closed
@@ -70,6 +72,7 @@ elevators:
       x: 15.0                  # 15 meters away from elevator 1
       y: 0.0
       z: 0.0
+      Y: 3.14159  # Rotate 180 degrees around Z axis (in radians)
     initial_floor: 3
     initial_state: "IDLE"
     initial_doors_open: true
