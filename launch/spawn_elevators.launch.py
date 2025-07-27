@@ -75,6 +75,8 @@ def generate_launch_description():
                 'door_operation_time': defaults.get('door_operation_time', 2.0),
                 'stop_duration_min': defaults.get('stop_duration', {}).get('min', 10.0),
                 'stop_duration_max': defaults.get('stop_duration', {}).get('max', 15.0),
+                'door_open_width': defaults.get('door_open_width', 1.7),
+                'door_open_direction': elevator_config.get('door_open_direction', 1),
                 'stop_duration_multiplier': elevator_config.get('schedule', {}).get('stop_duration_multiplier', 1.0),
                 'floor_heights': building_config.get('floor_heights', [0.0, 2.5, 5.0, 7.5])
             }
@@ -100,43 +102,21 @@ def generate_launch_description():
         base_sdf_content = f.read()
     
     # Spawn elevator cars with plugins
-    for i, config in enumerate(elevator_configs):
-        position = config['position']
-        initial_height = config.get('floor_heights', [0.0, 2.5, 5.0, 7.5])[config.get('initial_floor', 0)]
-        
-        # Create parameter setting commands
-        param_commands = []
-        param_node = f"/elevator_controller_{config['id']}"
-        
-        param_commands.extend([
-            ['ros2', 'param', 'set', param_node, 'movement_speed', str(config.get('movement_speed', 1.0))],
-            ['ros2', 'param', 'set', param_node, 'door_operation_time', str(config.get('door_operation_time', 2.0))],
-            ['ros2', 'param', 'set', param_node, 'stop_duration_min', str(config.get('stop_duration_min', 10.0))],
-            ['ros2', 'param', 'set', param_node, 'stop_duration_max', str(config.get('stop_duration_max', 15.0))],
-            ['ros2', 'param', 'set', param_node, 'stop_duration_multiplier', str(config.get('stop_duration_multiplier', 1.0))],
-            ['ros2', 'param', 'set', param_node, 'initial_floor', str(config.get('initial_floor', 0))],
-            ['ros2', 'param', 'set', param_node, 'initial_doors_open', str(config.get('initial_doors_open', True)).lower()],
-            ['ros2', 'param', 'set', param_node, 'floor_heights', str(config.get('floor_heights', [0.0, 2.5, 5.0, 7.5]))]
-        ])
-        
-        # Set parameters first
-        for j, param_cmd in enumerate(param_commands):
-            set_param = TimerAction(
-                period=5.0 + i * 2.0 + j * 0.1,  # Stagger parameter setting
-                actions=[
-                    ExecuteProcess(
-                        cmd=param_cmd,
-                        output='screen',
-                        name=f'set_param_{config["id"]}_{j}'
-                    )
-                ]
-            )
-            launch_actions.append(set_param)
-        
+    for i, config in enumerate(elevator_configs):        
         # Create modified SDF with plugin for this elevator
         plugin_xml = f'''
     <plugin name="elevator_controller" filename="libelevator_controller.so">
         <elevator_id>{config["id"]}</elevator_id>
+        <movement_speed>{config.get('movement_speed', 1.0)}</movement_speed>
+        <door_operation_time>{config.get('door_operation_time', 2.0)}</door_operation_time>
+        <stop_duration_min>{config.get('stop_duration_min', 10.0)}</stop_duration_min>
+        <stop_duration_max>{config.get('stop_duration_max', 15.0)}</stop_duration_max>
+        <door_open_width>{config.get('door_open_width', 1.7)}</door_open_width>
+        <stop_duration_multiplier>{config.get('stop_duration_multiplier', 1.0)}</stop_duration_multiplier>
+        <initial_floor>{config.get('initial_floor', 0)}</initial_floor>
+        <initial_doors_open>{str(config.get('initial_doors_open', True)).lower()}</initial_doors_open>
+        <door_open_direction>{config.get('door_open_direction', 1)}</door_open_direction>
+        <floor_heights>{str(config.get('floor_heights', [0.0, 2.5, 5.0, 7.5]))}</floor_heights>
     </plugin>
 </model>'''
         
@@ -149,8 +129,11 @@ def generate_launch_description():
             f.write(modified_sdf)
         
         # Spawn elevator car with plugin
+        position = config['position']
+        initial_height = config.get('floor_heights', [0.0, 2.5, 5.0, 7.5])[config.get('initial_floor', 0)]
+
         spawn_elevator = TimerAction(
-            period=6.0 + i * 2.0,  # Spawn after parameters are set
+            period=5.0 + i * 2.0,  # Spawn after parameters are set
             actions=[
                 ExecuteProcess(
                     cmd=['ros2', 'run', 'gazebo_ros', 'spawn_entity.py',

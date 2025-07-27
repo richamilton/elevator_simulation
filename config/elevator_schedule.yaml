@@ -14,7 +14,7 @@ elevator_defaults:
   stop_duration:
     min: 10.0                  # minimum stop time in seconds
     max: 15.0                  # maximum stop time in seconds
-  door_width: 1.2              # meters
+  door_open_width: 1.5         # meters
   car_dimensions:
     length: 2.0                # meters
     width: 1.5                 # meters
@@ -31,6 +31,7 @@ elevators:
       Y: 0
     initial_state: "IDLE"
     initial_doors_open: true
+    door_open_direction: -1  # Opens towards the right side
     schedule:
       enabled: true
       priority: "normal"
@@ -46,6 +47,7 @@ elevators:
     initial_floor: 1
     initial_state: "IDLE"
     initial_doors_open: true
+    door_open_direction: 1  # Opens towards the right side
     schedule:
       enabled: true
       priority: "normal"
@@ -61,6 +63,7 @@ elevators:
     initial_floor: 2
     initial_state: "IDLE"
     initial_doors_open: false   # Starts with doors closed
+    door_open_direction: 1  # Opens towards the left side
     schedule:
       enabled: true
       priority: "express"
@@ -76,6 +79,7 @@ elevators:
     initial_floor: 3
     initial_state: "IDLE"
     initial_doors_open: true
+    door_open_direction: -1  # Opens towards the left side
     schedule:
       enabled: true
       priority: "normal"

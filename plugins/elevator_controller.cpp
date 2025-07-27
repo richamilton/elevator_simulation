@@ -39,32 +39,89 @@ namespace gazebo
 
       void LoadConfiguration()
       {
-        // Declare parameters with default values
+        // Declare parameters with default values      
+        //  if (this->sdf->HasElement("floor_heights")) {
+        //       // SDF stores as string, so parse it into a vector<double>
+        //       std::string heights_str = this->sdf->Get<std::string>("floor_heights");
+        //       std::stringstream ss(heights_str);
+        //       double val;
+        //       this->floor_heights.clear();
+        //       while (ss >> val) {
+        //         this->floor_heights.push_back(val);
+        //         // skip commas or spaces
+        //         if (ss.peek() == ',' || ss.peek() == ' ')
+        //           ss.ignore();
+        //       }
+        // } else {
+        //     this->ros_node->declare_parameter("floor_heights", std::vector<double>{0.0, 2.5, 5.0, 7.5});
+        //     this->floor_heights = this->ros_node->get_parameter("floor_heights").as_double_array();
+        // }
         this->ros_node->declare_parameter("floor_heights", std::vector<double>{0.0, 2.5, 5.0, 7.5});
-        this->ros_node->declare_parameter("movement_speed", 1.0);
-        this->ros_node->declare_parameter("door_operation_time", 2.0);
-        this->ros_node->declare_parameter("stop_duration_min", 10.0);
-        this->ros_node->declare_parameter("stop_duration_max", 15.0);
-        this->ros_node->declare_parameter("stop_duration_multiplier", 1.0);
-        this->ros_node->declare_parameter("initial_floor", 0);
-        this->ros_node->declare_parameter("initial_doors_open", true);
-        this->ros_node->declare_parameter("log_level", "INFO");
-
-        // Load parameters
         this->floor_heights = this->ros_node->get_parameter("floor_heights").as_double_array();
-        this->movement_speed = this->ros_node->get_parameter("movement_speed").as_double();
-        this->door_operation_time = this->ros_node->get_parameter("door_operation_time").as_double();
+
+        if (this->sdf->HasElement("movement_speed")) {
+            this->movement_speed = this->sdf->Get<double>("movement_speed");
+        } else {
+            this->ros_node->declare_parameter("movement_speed", 1.0);
+            this->movement_speed = this->ros_node->get_parameter("movement_speed").as_double();
+        }
+
+        if (this->sdf->HasElement("door_operation_time")) {
+            this->door_operation_time = this->sdf->Get<double>("door_operation_time");
+        } else {
+            this->ros_node->declare_parameter("door_operation_time", 2.0);
+            this->door_operation_time = this->ros_node->get_parameter("door_operation_time").as_double();
+        }
         
-        double stop_min = this->ros_node->get_parameter("stop_duration_min").as_double();
-        double stop_max = this->ros_node->get_parameter("stop_duration_max").as_double();
-        double multiplier = this->ros_node->get_parameter("stop_duration_multiplier").as_double();
+        if (this->sdf->HasElement("stop_duration_min")) {
+            double stop_min = this->sdf->Get<double>("stop_duration_min");
+            double stop_max = this->sdf->Get<double>("stop_duration_max");
+            double multiplier = this->sdf->Get<double>("stop_duration_multiplier");
+            this->stop_duration_min = stop_min * multiplier;
+            this->stop_duration_max = stop_max * multiplier;
+        } else {
+            this->ros_node->declare_parameter("stop_duration_min", 10.0);
+            this->ros_node->declare_parameter("stop_duration_max", 15.0);
+            this->ros_node->declare_parameter("stop_duration_multiplier", 1.0);
+            double stop_min = this->ros_node->get_parameter("stop_duration_min").as_double();
+            double stop_max = this->ros_node->get_parameter("stop_duration_max").as_double();
+            double multiplier = this->ros_node->get_parameter("stop_duration_multiplier").as_double();
+            this->stop_duration_min = stop_min * multiplier;
+            this->stop_duration_max = stop_max * multiplier;
+        }
+
+        if (this->sdf->HasElement("door_open_width")) {
+            this->door_open_width = this->sdf->Get<double>("door_open_width");
+        } else {
+            this->ros_node->declare_parameter("door_open_width", 1.7);
+            this->door_open_width = this->ros_node->get_parameter("door_open_width").as_double();
+            this->door_open_position = -1 * this->door_open_width; // Open position is negative
+        }
+
+        if (this->sdf->HasElement("door_open_direction")) {
+            this->door_open_direction = this->sdf->Get<int>("door_open_direction");
+            this->door_open_position = this->door_open_direction * this->door_open_width;
+        } else {
+            this->ros_node->declare_parameter("door_open_direction", -1);
+            this->door_open_direction = this->ros_node->get_parameter("door_open_direction").as_int();
+            this->door_open_position = this->door_open_direction * this->door_open_width;
+        }
+
+        if (this->sdf->HasElement("initial_floor")) {
+            this->config_initial_floor = this->sdf->Get<int>("initial_floor");
+        } else {
+            this->ros_node->declare_parameter("initial_floor", 0);
+            this->config_initial_floor = this->ros_node->get_parameter("initial_floor").as_int();
+        }
         
-        this->config_initial_floor = this->ros_node->get_parameter("initial_floor").as_int();
-        this->config_initial_doors_open = this->ros_node->get_parameter("initial_doors_open").as_bool();
-        
-        // Apply multiplier to stop duration range
-        this->stop_duration_min = stop_min * multiplier;
-        this->stop_duration_max = stop_max * multiplier;
+        if (this->sdf->HasElement("initial_doors_open")) {
+            this->config_initial_doors_open = this->sdf->Get<bool>("initial_doors_open");
+        } else {
+            this->ros_node->declare_parameter("initial_doors_open", true);
+            this->config_initial_doors_open = this->ros_node->get_parameter("initial_doors_open").as_bool();
+        }
+
+        this->ros_node->declare_parameter("log_level", "INFO");
         
         // Update random distribution
         this->stop_duration_dist = std::uniform_real_distribution<double>(
@@ -82,6 +139,9 @@ namespace gazebo
 
       void Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf)
       {
+        // Store SDF pointer for configuration reading
+        this->sdf = _sdf;
+
         // Store the pointer to the model
         this->model = _parent;
         this->world = _parent->GetWorld();
@@ -149,7 +209,7 @@ namespace gazebo
         {
           if (this->door_joint)
           {
-              this->SetDoorPosition(-1.2); // Start open
+              this->SetDoorPosition(this->door_open_direction * this->door_open_width); // Start open
           }
         }
         
@@ -254,8 +314,8 @@ namespace gazebo
         }
         else
         {
-            // Animate door closing (0 to -1.2)
-            double door_pos = -1.2 + (progress * 1.2);
+            // Animate door closing (door_open_position to 0)
+            double door_pos = this->door_open_position + (-1 * this->door_open_direction * progress * this->door_open_width);
             this->SetDoorPosition(door_pos);
         }
       }
@@ -313,7 +373,7 @@ namespace gazebo
         {
             // Door fully open
             this->doors_open = true;
-            this->SetDoorPosition(-1.2);
+            this->SetDoorPosition(this->door_open_position);
             this->current_state = IDLE;
             this->state_start_time = current_time;
             this->stop_duration = this->GetRandomStopDuration();
@@ -323,8 +383,8 @@ namespace gazebo
         }
         else
         {
-            // Animate door opening (-1.2 to 0)
-            double door_pos = progress * -1.2;
+            // Animate door opening (0 to door_open_position)
+            double door_pos = progress * this->door_open_position;
             this->SetDoorPosition(door_pos);
         }
       }
@@ -333,7 +393,7 @@ namespace gazebo
       {
         if (this->door_joint)
         {
-            // position: 0 = closed, -1.2 = fully open
+            // position: 0 = closed, door_open_position = fully open
             this->door_joint->SetPosition(0, position);
         }
       }
@@ -386,6 +446,8 @@ namespace gazebo
         
         this->car_position_pub->publish(pose_msg);
       }
+      // SDF pointer for configuration reading
+      sdf::ElementPtr sdf;
 
       // Private member variables
       physics::ModelPtr model;
@@ -413,7 +475,10 @@ namespace gazebo
       double stop_duration;
       double stop_duration_min;
       double stop_duration_max;
-      
+      double door_open_width;
+      double door_open_position;
+      int door_open_direction;
+
       // Configuration parameters
       int config_initial_floor;
       bool config_initial_doors_open;
