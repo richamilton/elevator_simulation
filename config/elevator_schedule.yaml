@@ -14,7 +14,7 @@ elevator_defaults:
   stop_duration:
     min: 10.0                  # minimum stop time in seconds
     max: 15.0                  # maximum stop time in seconds
-  door_open_width: 1.5         # meters
+  door_open_width: 1.4         # meters
   car_dimensions:
     length: 2.0                # meters
     width: 1.5                 # meters
@@ -25,10 +25,10 @@ elevators:
   elevator_1:
     id: 1
     position:
-      x: 0.0
-      y: 0.0
+      x: 1.53185
+      y: 4.325
       z: 0.0
-      Y: 0
+      Y: -1.570801
     initial_state: "IDLE"
     initial_doors_open: true
     door_open_direction: -1  # Opens towards the right side
@@ -40,10 +40,10 @@ elevators:
   elevator_2:
     id: 2
     position:
-      x: 5.0                   # 5 meters away from elevator 1
-      y: 0.0
+      x: 4.01815                   # 5 meters away from elevator 1
+      y: 4.325
       z: 0.0
-      Y: 0
+      Y: -1.570801
     initial_floor: 1
     initial_state: "IDLE"
     initial_doors_open: true
@@ -56,10 +56,10 @@ elevators:
   elevator_3:
     id: 3
     position:
-      x: 10.0                  # 10 meters away from elevator 1
-      y: 0.0
+      x: 1.53185                  # 10 meters away from elevator 1
+      y: 0.025
       z: 0.0
-      Y: 3.14159  # Rotate 180 degrees around Z axis (in radians)
+      Y: 1.570801  # Rotate 180 degrees around Z axis (in radians)
     initial_floor: 2
     initial_state: "IDLE"
     initial_doors_open: false   # Starts with doors closed
@@ -72,10 +72,10 @@ elevators:
   elevator_4:
     id: 4
     position:
-      x: 15.0                  # 15 meters away from elevator 1
-      y: 0.0
+      x: 4.01815                  # 15 meters away from elevator 1
+      y: 0.025
       z: 0.0
-      Y: 3.14159  # Rotate 180 degrees around Z axis (in radians)
+      Y: 1.570801  # Rotate 180 degrees around Z axis (in radians)
     initial_floor: 3
     initial_state: "IDLE"
     initial_doors_open: true

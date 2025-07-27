@@ -15,19 +15,6 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
     """Generate launch description for multiple elevator simulation."""
     
-    # Declare launch arguments
-    verbose_arg = DeclareLaunchArgument(
-        'verbose',
-        default_value='true',
-        description='Enable verbose Gazebo output'
-    )
-    
-    world_arg = DeclareLaunchArgument(
-        'world',
-        default_value='empty.world',
-        description='Gazebo world file to load'
-    )
-    
     num_elevators_arg = DeclareLaunchArgument(
         'num_elevators',
         default_value='4',
@@ -43,12 +30,12 @@ def generate_launch_description():
     elevator_shaft_model = os.path.join(rexbot_dir, 'models', 'elevator_shaft', 'model.sdf')
     config_file = os.path.join(rexbot_dir, 'config', 'elevator_schedule.yaml')
     
-    # Start Gazebo
-    start_gazebo = ExecuteProcess(
-        cmd=['ros2', 'launch', 'gazebo_ros', 'gazebo.launch.py', 'verbose:=true'],
-        output='screen',
-        name='gazebo'
-    )
+    # # Start Gazebo
+    # start_gazebo = ExecuteProcess(
+    #     cmd=['ros2', 'launch', 'gazebo_ros', 'gazebo.launch.py', 'verbose:=true'],
+    #     output='screen',
+    #     name='gazebo'
+    # )
     
     # Load configuration
     elevator_configs = []
@@ -95,7 +82,7 @@ def generate_launch_description():
         ]
     
     # Create launch actions list
-    launch_actions = [verbose_arg, world_arg, num_elevators_arg, start_gazebo]
+    launch_actions = [num_elevators_arg]
 
     # Read the base model file
     with open(elevator_car_model, 'r') as f:
