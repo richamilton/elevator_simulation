@@ -1,7 +1,7 @@
 <?xml version='1.0'?>
 <sdf version='1.7'>
   <model name='lobby_w_residential_levels_x3'>
-    <pose>-1.95204 -2.24478 0 0 -0 0</pose>
+    <pose>0 0 0 0 0 0</pose>
     <link name='Floor_0'>
       <collision name='Floor_0_Collision_0'>
         <geometry>
@@ -2668,7 +2668,7 @@
     </link>
     <!-- ELEVATOR CAR PLATFORMS -->
     <!-- Elevator 1 at (1.54, 3.25) - starts at floor 0 -->
-    <link name='Elevator_1_Platform'>
+    <!-- <link name='Elevator_1_Platform'>
       <collision name='Elevator_1_Platform_Collision'>
         <geometry>
           <box>
@@ -2771,7 +2771,7 @@
         </material>
       </visual>
       <pose>4.01815 0.025 0 0 -0 1.570801</pose>
-    </link>
+    </link> -->
     <static>1</static>
   </model>
 </sdf>
