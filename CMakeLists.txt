@@ -17,6 +17,7 @@ find_package(gazebo_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(gazebo REQUIRED)
+find_package(example_interfaces REQUIRED)
 
 # Include directories
 include_directories(${GAZEBO_INCLUDE_DIRS})
@@ -31,6 +32,7 @@ ament_target_dependencies(elevator_controller
   std_msgs
   geometry_msgs
   gazebo_ros
+  example_interfaces
 )
 
 target_link_libraries(elevator_controller ${GAZEBO_LIBRARIES})
@@ -41,10 +43,11 @@ install(TARGETS elevator_controller
 )
 
 # Install Python scripts (when they exist)
-# install(PROGRAMS
-#   scripts/elevator_scheduler.py
-#   DESTINATION lib/${PROJECT_NAME}
-# )
+install(PROGRAMS
+  scripts/elevator_scheduler.py
+  scripts/test_service.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 # Install directories
 install(DIRECTORY launch/

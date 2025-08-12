@@ -8,6 +8,7 @@
 #include <std_msgs/msg/int32.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include <example_interfaces/srv/add_two_ints.hpp>
 
 #include <thread>
 #include <chrono>
@@ -35,6 +36,74 @@ namespace gazebo
         std::random_device rd;
         generator.seed(rd());
         stop_duration_dist = std::uniform_real_distribution<double>(10.0, 15.0);
+      }
+
+      void handle_goto_request(
+          const std::shared_ptr<example_interfaces::srv::AddTwoInts::Request> request,
+          std::shared_ptr<example_interfaces::srv::AddTwoInts::Response> response)
+      {
+          int target_floor = request->a;
+          
+          if (target_floor >= 0 && target_floor < static_cast<int>(this->floor_heights.size()))
+          {
+              this->requested_target_floor = target_floor;
+              this->has_external_request = true;
+              this->autonomous_mode = false;
+              response->sum = 1; // Success
+              
+              RCLCPP_INFO(this->ros_node->get_logger(), 
+                         "Elevator %d: Goto request for floor %d", 
+                         elevator_id, target_floor);
+          }
+          else
+          {
+              response->sum = 0; // Failed
+              RCLCPP_WARN(this->ros_node->get_logger(), 
+                         "Elevator %d: Invalid floor request: %d", 
+                         elevator_id, target_floor);
+          }
+      }
+      
+      void handle_hold_request(
+          const std::shared_ptr<example_interfaces::srv::AddTwoInts::Request> request,
+          std::shared_ptr<example_interfaces::srv::AddTwoInts::Response> response)
+      {
+          int target_floor = request->a;
+          
+          if (target_floor >= 0 && target_floor < static_cast<int>(this->floor_heights.size()))
+          {
+              this->requested_target_floor = target_floor;
+              this->has_external_request = true;
+              this->is_held = true;
+              this->autonomous_mode = false;
+              response->sum = 1; // Success
+              
+              RCLCPP_INFO(this->ros_node->get_logger(), 
+                         "Elevator %d: Hold request for floor %d", 
+                         elevator_id, target_floor);
+          }
+          else
+          {
+              response->sum = 0; // Failed
+              RCLCPP_WARN(this->ros_node->get_logger(), 
+                         "Elevator %d: Invalid hold floor request: %d", 
+                         elevator_id, target_floor);
+          }
+      }
+      
+      void handle_release_request(
+          const std::shared_ptr<example_interfaces::srv::AddTwoInts::Request> request,
+          std::shared_ptr<example_interfaces::srv::AddTwoInts::Response> response)
+      {
+          (void)request; // Unused parameter
+          
+          this->is_held = false;
+          this->autonomous_mode = true;
+          response->sum = 1; // Success
+          
+          RCLCPP_INFO(this->ros_node->get_logger(), 
+                     "Elevator %d: Released from hold, returning to autonomous mode", 
+                     elevator_id);
       }
 
       void LoadConfiguration()
@@ -178,11 +247,31 @@ namespace gazebo
         this->car_position_pub = this->ros_node->create_publisher<geometry_msgs::msg::PoseStamped>(
             ns + "/car_position", 10);
 
+        // Create ROS2 service servers
+        this->goto_service = this->ros_node->create_service<example_interfaces::srv::AddTwoInts>(
+            ns + "/goto", 
+            std::bind(&ElevatorController::handle_goto_request, this, 
+                     std::placeholders::_1, std::placeholders::_2));
+        this->hold_service = this->ros_node->create_service<example_interfaces::srv::AddTwoInts>(
+            ns + "/hold", 
+            std::bind(&ElevatorController::handle_hold_request, this, 
+                     std::placeholders::_1, std::placeholders::_2));
+        this->release_service = this->ros_node->create_service<example_interfaces::srv::AddTwoInts>(
+            ns + "/release", 
+            std::bind(&ElevatorController::handle_release_request, this, 
+                     std::placeholders::_1, std::placeholders::_2));
+
         // Initialize elevator parameters from configuration
         this->current_floor = this->config_initial_floor;
         this->target_floor = this->config_initial_floor;
         this->current_state = IDLE;
         this->doors_open = this->config_initial_doors_open;
+        
+        // Initialize external request handling
+        this->has_external_request = false;
+        this->requested_target_floor = 0;
+        this->is_held = false;
+        this->autonomous_mode = true;
         
         // Get initial position
         this->initial_pose = this->model->WorldPose();
@@ -274,15 +363,47 @@ namespace gazebo
 
       void HandleIdleState(common::Time current_time)
       {
-        // Check if it's time to move
-        double elapsed = (current_time - this->state_start_time).Double();
-        if (elapsed >= this->stop_duration)
+        // If held, don't move
+        if (this->is_held)
         {
-            // Start closing doors (not moving directly)
-            this->current_state = CLOSING_DOORS;
-            this->state_start_time = current_time;
-            RCLCPP_INFO(this->ros_node->get_logger(), 
-                      "Elevator %d: Starting to close door", elevator_id);
+            if (this->target_floor != this->current_floor)
+            {
+                this->current_state = CLOSING_DOORS;
+                this->state_start_time = current_time;
+                RCLCPP_INFO(this->ros_node->get_logger(), 
+                          "Elevator %d: External request - starting to close door", elevator_id);
+            }
+            return;
+        }
+        
+        // Check for external requests
+        if (this->has_external_request)
+        {
+            this->target_floor = this->requested_target_floor;
+            this->has_external_request = false;
+            this->autonomous_mode = true;
+            if (this->target_floor != this->current_floor)
+            {
+                this->current_state = CLOSING_DOORS;
+                this->state_start_time = current_time;
+                RCLCPP_INFO(this->ros_node->get_logger(), 
+                          "Elevator %d: External request - starting to close door", elevator_id);
+            }
+            return;
+        }
+        
+        // Check if it's time to move (autonomous mode only)
+        if (this->autonomous_mode)
+        {
+            double elapsed = (current_time - this->state_start_time).Double();
+            if (elapsed >= this->stop_duration)
+            {
+                // Start closing doors (not moving directly)
+                this->current_state = CLOSING_DOORS;
+                this->state_start_time = current_time;
+                RCLCPP_INFO(this->ros_node->get_logger(), 
+                          "Elevator %d: Starting to close door", elevator_id);
+            }
         }
       }
 
@@ -374,6 +495,11 @@ namespace gazebo
             // Door fully open
             this->doors_open = true;
             this->SetDoorPosition(this->door_open_position);
+            // If held, don't move
+            if (this->is_held && !this->has_external_request)
+            {
+                return;
+            }
             this->current_state = IDLE;
             this->state_start_time = current_time;
             this->stop_duration = this->GetRandomStopDuration();
@@ -400,14 +526,29 @@ namespace gazebo
 
       void ScheduleNextMovement()
       {
-          // Simple random floor selection
-          std::uniform_int_distribution<int> floor_dist(0, 3);
-          do {
-              this->target_floor = floor_dist(generator);
-          } while (this->target_floor == this->current_floor);
+          // Check for external requests first
+          if (this->has_external_request)
+          {
+              this->target_floor = this->requested_target_floor;
+              this->has_external_request = false;
+              this->autonomous_mode = true;
+              RCLCPP_INFO(this->ros_node->get_logger(), 
+                        "Elevator %d: External request - target floor: %d", elevator_id, target_floor);
+              return;
+          }
           
-          RCLCPP_INFO(this->ros_node->get_logger(), 
-                    "Elevator %d: Next target floor: %d", elevator_id, target_floor);
+          // Only do autonomous movement if not held and in autonomous mode
+          if (!this->is_held && this->autonomous_mode)
+          {
+              // Simple random floor selection
+              std::uniform_int_distribution<int> floor_dist(0, 3);
+              do {
+                  this->target_floor = floor_dist(generator);
+              } while (this->target_floor == this->current_floor);
+              
+              RCLCPP_INFO(this->ros_node->get_logger(), 
+                        "Elevator %d: Autonomous - next target floor: %d", elevator_id, target_floor);
+          }
       }
 
       void SetElevatorHeight(double target_height)
@@ -459,6 +600,10 @@ namespace gazebo
       rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr door_state_pub;
       rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr car_position_pub;
       
+      rclcpp::Service<example_interfaces::srv::AddTwoInts>::SharedPtr goto_service;
+      rclcpp::Service<example_interfaces::srv::AddTwoInts>::SharedPtr hold_service;
+      rclcpp::Service<example_interfaces::srv::AddTwoInts>::SharedPtr release_service;
+      
       std::shared_ptr<rclcpp::executors::SingleThreadedExecutor> executor;
       std::thread executor_thread;
       
@@ -482,6 +627,12 @@ namespace gazebo
       // Configuration parameters
       int config_initial_floor;
       bool config_initial_doors_open;
+      
+      // External request handling
+      bool has_external_request;
+      int requested_target_floor;
+      bool is_held;
+      bool autonomous_mode;
       
       ignition::math::Pose3d initial_pose;
       common::Time last_update_time;
