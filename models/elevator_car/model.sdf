@@ -269,14 +269,14 @@
       <axis>
         <xyz>0 1 0</xyz>
         <limit>
-          <lower>-1.7</lower>  <!-- Slides 1.2m to the left -->
-          <upper>1.7</upper>
+          <lower>-1.4</lower>  <!-- Slides 1.2m to the left -->
+          <upper>1.4</upper>
           <effort>500</effort>
           <velocity>0.3</velocity>
         </limit>
         <dynamics>
           <damping>5.0</damping>
-          <friction>1.0</friction>
+          <friction>0.0</friction>
         </dynamics>
       </axis>
     </joint>
