@@ -27,15 +27,7 @@ def generate_launch_description():
     
     # Model and config paths
     elevator_car_model = os.path.join(elevator_simulation_dir, 'models', 'elevator_car', 'model.sdf')
-    elevator_shaft_model = os.path.join(elevator_simulation_dir, 'models', 'elevator_shaft', 'model.sdf')
     config_file = os.path.join(elevator_simulation_dir, 'config', 'elevator_schedule.yaml')
-    
-    # # Start Gazebo
-    # start_gazebo = ExecuteProcess(
-    #     cmd=['ros2', 'launch', 'gazebo_ros', 'gazebo.launch.py', 'verbose:=true'],
-    #     output='screen',
-    #     name='gazebo'
-    # )
     
     # Load configuration
     elevator_configs = []

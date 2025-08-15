@@ -49,7 +49,6 @@ def generate_launch_description():
     
     # Model paths
     elevator_car_model = os.path.join(elevator_simulation_dir, 'models', 'elevator_car', 'model.sdf')
-    elevator_shaft_model = os.path.join(elevator_simulation_dir, 'models', 'elevator_shaft', 'model.sdf')
     
     # Start Gazebo
     start_gazebo = ExecuteProcess(
