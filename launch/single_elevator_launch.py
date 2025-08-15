@@ -45,11 +45,11 @@ def generate_launch_description():
     )
     
     # Get package directory
-    rexbot_dir = get_package_share_directory('rexbot')
+    elevator_simulation_dir = get_package_share_directory('elevator_simulation')
     
     # Model paths
-    elevator_car_model = os.path.join(rexbot_dir, 'models', 'elevator_car', 'model.sdf')
-    elevator_shaft_model = os.path.join(rexbot_dir, 'models', 'elevator_shaft', 'model.sdf')
+    elevator_car_model = os.path.join(elevator_simulation_dir, 'models', 'elevator_car', 'model.sdf')
+    elevator_shaft_model = os.path.join(elevator_simulation_dir, 'models', 'elevator_shaft', 'model.sdf')
     
     # Start Gazebo
     start_gazebo = ExecuteProcess(

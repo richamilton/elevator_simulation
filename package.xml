@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypes="xml"?>
 <package format="3">
-  <name>rexbot</name>
+  <name>elevator_simulation</name>
   <version>1.0.0</version>
   <description>Multi-floor robot navigation with elevator simulation</description>
   
-  <maintainer email="user@example.com">RexBot Team</maintainer>
+  <maintainer email="user@example.com">Elevator Simulation Team</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

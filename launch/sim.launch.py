@@ -13,7 +13,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
 
-    package_name='rexbot'
+    package_name='elevator_simulation'
 
     # Declare launch arguments
     verbose_arg = DeclareLaunchArgument(
@@ -30,10 +30,10 @@ def generate_launch_description():
     
 
     # Get package directory
-    rexbot_dir = get_package_share_directory(package_name)
+    elevator_simulation_dir = get_package_share_directory(package_name)
     
     # Model paths
-    building_sdf_path = os.path.join(rexbot_dir, 'models', 'building', 'model.sdf')
+    building_sdf_path = os.path.join(elevator_simulation_dir, 'models', 'building', 'model.sdf')
 
     # Start Gazebo
     start_gazebo = ExecuteProcess(
@@ -72,7 +72,7 @@ def generate_launch_description():
         period=12.0,  # Start scheduler after all elevators are spawned
         actions=[
             Node(
-                package='rexbot',
+                package='elevator_simulation',
                 executable='elevator_scheduler.py',
                 name='elevator_scheduler',
                 output='screen'
