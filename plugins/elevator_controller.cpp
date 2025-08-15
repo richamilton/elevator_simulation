@@ -363,48 +363,49 @@ namespace gazebo
 
       void HandleIdleState(common::Time current_time)
       {
-        // If held, don't move
-        if (this->is_held)
+        double elapsed = (current_time - this->state_start_time).Double();
+        if (elapsed >= this->stop_duration)
         {
-            if (this->target_floor != this->current_floor)
+            // If held, don't move
+            if (this->is_held)
             {
-                this->current_state = CLOSING_DOORS;
-                this->state_start_time = current_time;
-                RCLCPP_INFO(this->ros_node->get_logger(), 
-                          "Elevator %d: External request - starting to close door", elevator_id);
+                if (this->target_floor != this->current_floor)
+                {
+                    this->current_state = CLOSING_DOORS;
+                    this->state_start_time = current_time;
+                    RCLCPP_INFO(this->ros_node->get_logger(), 
+                            "Elevator %d: External request - starting to close door", elevator_id);
+                }
+                return;
             }
-            return;
-        }
-        
-        // Check for external requests
-        if (this->has_external_request)
-        {
-            this->target_floor = this->requested_target_floor;
-            this->has_external_request = false;
-            this->autonomous_mode = true;
-            if (this->target_floor != this->current_floor)
+            
+            // Check for external requests
+            if (this->has_external_request)
             {
-                this->current_state = CLOSING_DOORS;
-                this->state_start_time = current_time;
-                RCLCPP_INFO(this->ros_node->get_logger(), 
-                          "Elevator %d: External request - starting to close door", elevator_id);
+                this->target_floor = this->requested_target_floor;
+                this->has_external_request = false;
+                this->autonomous_mode = true;
+                if (this->target_floor != this->current_floor)
+                {
+                    this->current_state = CLOSING_DOORS;
+                    this->state_start_time = current_time;
+                    RCLCPP_INFO(this->ros_node->get_logger(), 
+                            "Elevator %d: External request - starting to close door", elevator_id);
+                }
+                return;
             }
-            return;
-        }
-        
-        // Check if it's time to move (autonomous mode only)
-        if (this->autonomous_mode)
-        {
-            double elapsed = (current_time - this->state_start_time).Double();
-            if (elapsed >= this->stop_duration)
+            
+            // Check if it's time to move (autonomous mode only)
+            if (this->autonomous_mode)
             {
                 // Start closing doors (not moving directly)
                 this->current_state = CLOSING_DOORS;
                 this->state_start_time = current_time;
                 RCLCPP_INFO(this->ros_node->get_logger(), 
-                          "Elevator %d: Starting to close door", elevator_id);
+                        "Elevator %d: Starting to close door", elevator_id);
             }
         }
+        
       }
 
       void HandleClosingDoorsState(common::Time current_time)

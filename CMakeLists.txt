@@ -45,7 +45,6 @@ install(TARGETS elevator_controller
 # Install Python scripts (when they exist)
 install(PROGRAMS
   scripts/elevator_scheduler.py
-  scripts/test_service.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -14,7 +14,7 @@ from geometry_msgs.msg import PoseStamped
 from example_interfaces.srv import AddTwoInts  # We'll create a custom service later
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 from enum import Enum
 
@@ -28,6 +28,15 @@ class ElevatorState(Enum):
     MOVING_DOWN = "MOVING_DOWN"
     OPENING_DOORS = "OPENING_DOORS"
     UNKNOWN = "UNKNOWN"
+
+class SingleElevatorRequestState(Enum):
+    IDLE = "IDLE"
+    EN_ROUTE = "EN_ROUTE"
+    TRANSPORTING = "TRANSPORTING"
+
+class SingleElevatorRequestDirection(Enum):
+    UP = 1
+    DOWN = -1
 
 @dataclass
 class ElevatorStatus:
@@ -49,6 +58,39 @@ class ElevatorStatus:
     def is_moving(self) -> bool:
         """Check if elevator is currently moving"""
         return self.state in [ElevatorState.MOVING_UP, ElevatorState.MOVING_DOWN]
+
+@dataclass
+class SingleElevatorRequest:
+    """Tracks a single elevator request"""
+    from_floor: int = None
+    direction: SingleElevatorRequestDirection = None
+    to_floors: list[int] = field(default_factory=list)  # List of target floors
+    elevator: Optional[ElevatorStatus] = None
+
+    def clear(self):
+        self.from_floor = None
+        self.direction = None
+        self.to_floors = []
+        self.elevator = None
+    
+    def add_stop(self, floor: int):
+        if self.direction == SingleElevatorRequestDirection.UP and \
+           floor < self.elevator.current_floor:
+            self.get_logger().error('Cannot add stop below current floor when going UP')
+            raise Exception('Invalid stop request')
+
+        if self.direction == SingleElevatorRequestDirection.DOWN and \
+           floor > self.elevator.current_floor:
+            self.get_logger().error('Cannot add stop above current floor when going DOWN')
+            raise Exception('Invalid stop request')
+
+        if floor not in self.to_floors:
+            self.to_floors.append(floor)
+        
+            if self.direction == SingleElevatorRequestDirection.UP:
+                self.to_floors.sort()
+            elif self.direction == SingleElevatorRequestDirection.DOWN:
+                self.to_floors.sort(reverse=True)   
 
 class ElevatorScheduler(Node):
     """Main elevator scheduling and coordination node"""
@@ -83,6 +125,13 @@ class ElevatorScheduler(Node):
             'request_elevator',
             self.handle_elevator_request
         )
+
+        # ROS Service for adding a stop
+        self.add_stop_service = self.create_service(
+            AddTwoInts,
+            'add_stop',
+            self.handle_add_stop_request
+        )
         
         # Group control services
         self.bring_all_service = self.create_service(
@@ -91,13 +140,13 @@ class ElevatorScheduler(Node):
             self.handle_bring_all_request
         )
         self.get_logger().info('DEBUG: bring_all_to_floor service created successfully')
-        
+
         self.release_all_service = self.create_service(
             AddTwoInts,
             'release_all_elevators',
             self.handle_release_all_request
         )
-        
+
         # Service clients for individual elevator control
         self.elevator_goto_clients = {}
         self.elevator_hold_clients = {}
@@ -157,7 +206,10 @@ class ElevatorScheduler(Node):
         #         5.0,  # Every 5 seconds
         #         self.coordinate_elevators
         #     )
-        
+
+        self._single_elevator_request_state = SingleElevatorRequestState.IDLE
+        self.single_elevator_request = SingleElevatorRequest()  # Track which elevator is handling the request
+
         self.get_logger().info(f'Elevator Scheduler initialized for {self.num_elevators} elevators')
         self.get_logger().info(f'Coordination: {self.coordination_enabled}, Min available: {self.min_available}')
         self.get_logger().info('Services available:')
@@ -167,26 +219,68 @@ class ElevatorScheduler(Node):
     
     def handle_elevator_request(self, request, response):
         """Handle ROS service requests for elevators"""
-        # Using AddTwoInts service: request.a = from_floor, request.b = to_floor
+        # Using AddTwoInts service: request.a = from_floor
+        self.get_logger().info(f'Received elevator request: Floor {request.a}, Direction {request.b}')
+
         from_floor = request.a
-        to_floor = request.b
-        
-        self.get_logger().info(f'Received elevator request: Floor {from_floor} → Floor {to_floor}')
-        
-        # Find best elevator
-        best_elevator = self.find_best_elevator(from_floor, to_floor)
-        
-        if best_elevator:
-            response.sum = best_elevator  # Return elevator ID
-            self.get_logger().info(f'Assigned elevator {best_elevator}')
+
+        if request.b not in [SingleElevatorRequestDirection.UP.value, SingleElevatorRequestDirection.DOWN.value]:
+            self.get_logger().error(f'Invalid direction: {request.b}. Must be 1 (up) or -1 (down).')
+            response.sum = -1
+            return responses
+
+        response.sum = -1  # Default response
+
+        # TODO: Validate floor requests
+
+        # check if single elevator request is available
+        if self.single_elevator_request_state == SingleElevatorRequestState.IDLE:
+            # Find best elevator
+            best_elevator = self.find_best_elevator(from_floor)
             
-            # Mark as busy
-            with self.lock:
-                self.elevators[best_elevator].available_for_call = False
+            if best_elevator:
+                response.sum = best_elevator  # Return elevator ID
+                self.get_logger().info(f'Assigned elevator {best_elevator}')
+                
+                # Mark as busy
+                with self.lock:
+                    self.elevators[best_elevator].available_for_call = False
+
+                # Set single elevator request
+                with self.lock:
+                    self.single_elevator_request.from_floor = from_floor
+                    self.single_elevator_request.direction = SingleElevatorRequestDirection(request.b)
+                    self.single_elevator_request.elevator = self.elevators[best_elevator]
+
+                # Set single elevator request state to EN_ROUTE
+                def set_en_route():
+                    self.single_elevator_request_state = SingleElevatorRequestState.EN_ROUTE
+                threading.Thread(target=set_en_route, daemon=True).start()
+            else:
+                self.get_logger().warn('No elevator available for request')
         else:
-            response.sum = -1  # No elevator available
-            self.get_logger().warn('No elevator available for request')
+            self.get_logger().warn('Elevator is busy with another request')
         
+        return response
+
+    def handle_add_stop_request(self, request, response):
+        """Handle request to add a stop to the current elevator"""
+        self.get_logger().info('Received add stop request')
+        target_floor = request.a
+
+        if self.single_elevator_request_state != SingleElevatorRequestState.TRANSPORTING:
+            self.get_logger().error('Invalid state for adding stop: must be TRANSPORTING')
+            response.sum = -1
+            return response
+
+        try:
+            self.single_elevator_request.add_stop(target_floor)
+            self.get_logger().info(f'Added floor {target_floor} to stop list for elevator {self.single_elevator_request.elevator.elevator_id}')
+            response.sum = 1
+        except Exception as e:
+            self.get_logger().error(f'Failed to add stop: {e}')
+            response.sum = -1
+
         return response
     
     def handle_bring_all_request(self, request, response):
@@ -295,7 +389,7 @@ class ElevatorScheduler(Node):
                 self.elevators[elevator_id].last_update = time.time()
                 
                 # Infer state from movement
-                self.infer_elevator_state(elevator_id)
+                self.infer_elevator_single_elevator_request_state(elevator_id)
     
     def door_callback(self, msg: Bool, elevator_id: int):
         """Update elevator door state"""
@@ -311,7 +405,7 @@ class ElevatorScheduler(Node):
                 self.elevators[elevator_id].position = msg
                 self.elevators[elevator_id].last_update = time.time()
     
-    def infer_elevator_state(self, elevator_id: int):
+    def infer_elevator_single_elevator_request_state(self, elevator_id: int):
         """Infer elevator state from available data"""
         elevator = self.elevators[elevator_id]
         current_time = time.time()
@@ -343,14 +437,12 @@ class ElevatorScheduler(Node):
                     moving.append(elevator_id)
             return moving
     
-    def find_best_elevator(self, requested_floor: int, destination_floor: int) -> Optional[int]:
+    def find_best_elevator(self, requested_floor: int) -> Optional[int]:
         """Find the best elevator for a given request"""
-        self.get_logger().info(f'Finding best elevator for request: {requested_floor} → {destination_floor}')
         with self.lock:
             available_elevators = self.get_available_elevators()
             self.get_logger().debug(f'Available elevators: {available_elevators}')
             if not available_elevators:
-                self.get_logger().warn('No available elevators for request')
                 return None
             
             # Simple algorithm: find closest available elevator
@@ -429,31 +521,92 @@ class ElevatorScheduler(Node):
         for line in status_lines:
             self.get_logger().info(line)
     
-    def request_elevator(self, from_floor: int, to_floor: int) -> Optional[int]:
-        """Request an elevator for robot transportation"""
-        best_elevator = self.find_best_elevator(from_floor, to_floor)
-        
-        if best_elevator:
-            self.get_logger().info(
-                f'Assigned elevator {best_elevator} for trip: Floor {from_floor} → {to_floor}'
-            )
-            
-            # Mark elevator as busy (in a full implementation, you'd send commands)
-            with self.lock:
-                self.elevators[best_elevator].available_for_call = False
-        else:
-            self.get_logger().warn(
-                f'No available elevator for trip: Floor {from_floor} → {to_floor}'
-            )
-        
-        return best_elevator
+    @property
+    def single_elevator_request_state(self):
+        return self._single_elevator_request_state
+
+    @single_elevator_request_state.setter
+    def single_elevator_request_state(self, new_state):
+        if self._single_elevator_request_state != new_state:
+            self._single_elevator_request_state = new_state
+            self.OnUpdateForSingleElevatorRequest()
     
-    def release_elevator(self, elevator_id: int):
-        """Release an elevator back to general availability"""
-        with self.lock:
-            if elevator_id in self.elevators:
-                self.elevators[elevator_id].available_for_call = True
-                self.get_logger().info(f'Released elevator {elevator_id} back to service')
+    def OnUpdateForSingleElevatorRequest(self):
+        if self.single_elevator_request_state == SingleElevatorRequestState.IDLE:
+            self.get_logger().info('Elevator is idle, ready for requests')
+            self.handle_idle_single_elevator_request_state()
+        elif self.single_elevator_request_state == SingleElevatorRequestState.EN_ROUTE:
+            self.get_logger().info('Elevator is en route to requested floor')
+            self.handle_en_route_single_elevator_request_state()
+        elif self.single_elevator_request_state == SingleElevatorRequestState.TRANSPORTING:
+            self.get_logger().info('Elevator is ready to transport passengers')
+            self.handle_transporting_single_elevator_request_state()
+    
+    def handle_idle_single_elevator_request_state(self):
+        self.single_elevator_request.clear()
+        self.get_logger().info('Single elevator request cleared and ready for new requests')
+    
+    def handle_en_route_single_elevator_request_state(self):
+        self.get_logger().info(f'Elevator {self.single_elevator_request.elevator.elevator_id} is en route!')
+
+        # Send elevator to the requested floor
+        self.send_elevator_to_floor(
+            self.single_elevator_request.elevator.elevator_id,
+            self.single_elevator_request.from_floor
+        )
+
+        # Wait for elevator to arrive at the requested floor
+        timeout = 60  # seconds
+        start_time = time.time()
+        elevator = self.single_elevator_request.elevator
+        while not (elevator.current_floor == self.single_elevator_request.from_floor and elevator.doors_open):
+            if time.time() - start_time > timeout:
+                self.get_logger().warn(
+                    f"Timeout waiting for elevator {elevator.elevator_id} to reach floor "
+                    f"{self.single_elevator_request.from_floor}"
+                )
+                self.single_elevator_request_state = SingleElevatorRequestState.IDLE
+                return
+            time.sleep(0.1)
+        self.get_logger().info(
+            f'Elevator {elevator.elevator_id} has reached floor {self.single_elevator_request.from_floor}'
+        )
+
+        # Set single elevator request state to TRANSPORTING
+        self.single_elevator_request_state = SingleElevatorRequestState.TRANSPORTING
+
+    def handle_transporting_single_elevator_request_state(self):
+        self.get_logger().info('Waiting for target floors to be added...')
+
+        # Wait for target floors to be added
+        wait_timeout = 30  # seconds
+        start_time = time.time()
+        elevator = self.single_elevator_request.elevator
+        while not self.single_elevator_request.to_floors:
+            if time.time() - start_time > wait_timeout:
+                self.get_logger().warn('Timeout waiting for target floors to be added')
+                self.single_elevator_request_state = SingleElevatorRequestState.IDLE
+                return
+            time.sleep(0.1)
+
+        # Start transporting passengers
+        self.get_logger().info('Starting to transport passengers...')
+        while self.single_elevator_request.to_floors:
+            next_floor = self.single_elevator_request.to_floors.pop(0)
+            self.get_logger().info(f'Sending elevator to floor {next_floor}')
+            self.send_elevator_to_floor(
+                self.single_elevator_request.elevator.elevator_id,
+                next_floor
+            )
+            while not (elevator.current_floor == next_floor and elevator.doors_open):
+                time.sleep(0.1)
+            self.get_logger().info(
+                f'Elevator {elevator.elevator_id} has reached floor {next_floor}'
+            )
+        self.get_logger().info('All requested stops completed.')
+        
+        # After all stops are done, reset state
+        self.single_elevator_request_state = SingleElevatorRequestState.IDLE
 
 
 def main(args=None):
