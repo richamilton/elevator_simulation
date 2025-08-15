@@ -108,23 +108,6 @@ namespace gazebo
 
       void LoadConfiguration()
       {
-        // Declare parameters with default values      
-        //  if (this->sdf->HasElement("floor_heights")) {
-        //       // SDF stores as string, so parse it into a vector<double>
-        //       std::string heights_str = this->sdf->Get<std::string>("floor_heights");
-        //       std::stringstream ss(heights_str);
-        //       double val;
-        //       this->floor_heights.clear();
-        //       while (ss >> val) {
-        //         this->floor_heights.push_back(val);
-        //         // skip commas or spaces
-        //         if (ss.peek() == ',' || ss.peek() == ' ')
-        //           ss.ignore();
-        //       }
-        // } else {
-        //     this->ros_node->declare_parameter("floor_heights", std::vector<double>{0.0, 2.5, 5.0, 7.5});
-        //     this->floor_heights = this->ros_node->get_parameter("floor_heights").as_double_array();
-        // }
         this->ros_node->declare_parameter("floor_heights", std::vector<double>{0.0, 2.5, 5.0, 7.5});
         this->floor_heights = this->ros_node->get_parameter("floor_heights").as_double_array();
 
