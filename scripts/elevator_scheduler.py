@@ -194,6 +194,7 @@ class ElevatorScheduler(Node):
                 10
             )
         
+        # TODO: Fix publishers for elevator status
         # # Status publishing
         # self.status_timer = self.create_timer(
         #     1.0 / self.update_rate, 
@@ -529,9 +530,9 @@ class ElevatorScheduler(Node):
     def single_elevator_request_state(self, new_state):
         if self._single_elevator_request_state != new_state:
             self._single_elevator_request_state = new_state
-            self.OnUpdateForSingleElevatorRequest()
+            self.on_update_for_single_elevator_request()
     
-    def OnUpdateForSingleElevatorRequest(self):
+    def on_update_for_single_elevator_request(self):
         if self.single_elevator_request_state == SingleElevatorRequestState.IDLE:
             self.get_logger().info('Elevator is idle, ready for requests')
             self.handle_idle_single_elevator_request_state()
