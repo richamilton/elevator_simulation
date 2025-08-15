@@ -76,12 +76,10 @@ class SingleElevatorRequest:
     def add_stop(self, floor: int):
         if self.direction == SingleElevatorRequestDirection.UP and \
            floor < self.elevator.current_floor:
-            self.get_logger().error('Cannot add stop below current floor when going UP')
             raise Exception('Invalid stop request')
 
         if self.direction == SingleElevatorRequestDirection.DOWN and \
            floor > self.elevator.current_floor:
-            self.get_logger().error('Cannot add stop above current floor when going DOWN')
             raise Exception('Invalid stop request')
 
         if floor not in self.to_floors:
@@ -228,7 +226,7 @@ class ElevatorScheduler(Node):
         if request.b not in [SingleElevatorRequestDirection.UP.value, SingleElevatorRequestDirection.DOWN.value]:
             self.get_logger().error(f'Invalid direction: {request.b}. Must be 1 (up) or -1 (down).')
             response.sum = -1
-            return responses
+            return response
 
         response.sum = -1  # Default response
 
@@ -422,7 +420,6 @@ class ElevatorScheduler(Node):
     def get_available_elevators(self) -> List[int]:
         """Get list of currently available elevator IDs"""
         self.get_logger().info(f'Getting available elevators')
-        # with self.lock:
         available = []
         for elevator_id, elevator in self.elevators.items():
             if elevator.is_available():
@@ -560,6 +557,7 @@ class ElevatorScheduler(Node):
         timeout = 60  # seconds
         start_time = time.time()
         elevator = self.single_elevator_request.elevator
+        # TODO: Use a more robust way to check if the elevator has arrived
         while not (elevator.current_floor == self.single_elevator_request.from_floor and elevator.doors_open):
             if time.time() - start_time > timeout:
                 self.get_logger().warn(
