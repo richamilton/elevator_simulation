@@ -1,0 +1,137 @@
+# Elevator Simulation Configuration
+# Configuration for 4-floor building with 4 elevators
+
+# Building configuration
+building:
+  floors: 4
+  floor_heights: [0.0, 2.5, 5.0, 7.5]  # Ground, Floor 1, Floor 2, Floor 3
+  floor_names: ["Ground", "Floor 1", "Floor 2", "Floor 3"]
+
+# Global elevator parameters
+elevator_defaults:
+  movement_speed: 1.0          # m/s vertical movement speed
+  door_operation_time: 2.0     # seconds for door open/close
+  stop_duration:
+    min: 10.0                  # minimum stop time in seconds
+    max: 15.0                  # maximum stop time in seconds
+  door_open_width: 1.4         # meters
+  car_dimensions:
+    length: 2.0                # meters
+    width: 1.5                 # meters
+    height: 2.5                # meters
+
+# Individual elevator configurations
+elevators:
+  elevator_1:
+    id: 1
+    position:
+      x: 1.53185
+      y: 4.325
+      z: 0.0
+      Y: -1.570801
+    initial_state: "IDLE"
+    initial_doors_open: true
+    door_open_direction: -1  # Opens towards the right side
+    schedule:
+      enabled: true
+      priority: "normal"
+      stop_duration_multiplier: 1.0
+    
+  elevator_2:
+    id: 2
+    position:
+      x: 4.01815                   # 5 meters away from elevator 1
+      y: 4.325
+      z: 0.0
+      Y: -1.570801
+    initial_floor: 1
+    initial_state: "IDLE"
+    initial_doors_open: true
+    door_open_direction: 1  # Opens towards the right side
+    schedule:
+      enabled: true
+      priority: "normal"
+      stop_duration_multiplier: 1.2  # 20% longer stops
+    
+  elevator_3:
+    id: 3
+    position:
+      x: 1.53185                  # 10 meters away from elevator 1
+      y: 0.025
+      z: 0.0
+      Y: 1.570801  # Rotate 180 degrees around Z axis (in radians)
+    initial_floor: 2
+    initial_state: "IDLE"
+    initial_doors_open: false   # Starts with doors closed
+    door_open_direction: 1  # Opens towards the left side
+    schedule:
+      enabled: true
+      priority: "express"
+      stop_duration_multiplier: 0.8  # 20% shorter stops
+    
+  elevator_4:
+    id: 4
+    position:
+      x: 4.01815                  # 15 meters away from elevator 1
+      y: 0.025
+      z: 0.0
+      Y: 1.570801  # Rotate 180 degrees around Z axis (in radians)
+    initial_floor: 3
+    initial_state: "IDLE"
+    initial_doors_open: true
+    door_open_direction: -1  # Opens towards the left side
+    schedule:
+      enabled: true
+      priority: "normal"
+      stop_duration_multiplier: 1.1
+
+# Coordination settings (ensures 1-2 elevators available at any time)
+coordination:
+  max_simultaneous_moving: 2   # Maximum elevators moving at once
+  min_available_elevators: 1   # Minimum elevators with doors open
+  coordination_enabled: true
+  
+# Scheduling patterns (optional advanced feature)
+schedule_patterns:
+  rush_hour:
+    active: false
+    time_multiplier: 0.5       # Faster movement during rush hour
+    priority_floors: [0, 1]    # Ground and Floor 1 get priority
+    
+  maintenance:
+    active: false
+    disabled_elevators: [4]    # Elevator 4 disabled during maintenance
+    
+  normal_operation:
+    active: true
+    random_scheduling: true
+    avoid_simultaneous_arrival: true
+
+# Safety and limits
+safety:
+  max_door_open_time: 30.0     # seconds - emergency door close
+  movement_timeout: 10.0       # seconds - max time to move between floors
+  emergency_stop_enabled: true
+  floor_alignment_tolerance: 0.01  # meters - how precise floor stopping is
+
+# Debugging and monitoring
+debug:
+  log_level: "INFO"            # DEBUG, INFO, WARN, ERROR
+  publish_debug_topics: true
+  state_change_logging: true
+  performance_monitoring: false
+
+# ROS2 topic configuration
+topics:
+  namespace_prefix: "elevator_"
+  current_floor_topic: "current_floor"
+  door_state_topic: "door_state"
+  car_position_topic: "car_position"
+  debug_topic: "debug_info"
+  
+# Gazebo-specific settings
+gazebo:
+  physics_update_rate: 1000    # Hz
+  plugin_update_rate: 100      # Hz
+  visual_updates: true
+  collision_detection: true
