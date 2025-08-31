@@ -108,6 +108,11 @@ namespace gazebo
 
       void LoadConfiguration()
       {
+        // TODO: Fix getting params from configs instead of resolving to default values
+        // NOTES:
+        // - On the ground floor (floor 0) the floor is the ground
+        // - To make elevator platform flush with ground, we set the ground floor height to -0.1
+        // - Default heights: {-0.1, 2.5, 5.0, 7.5}
         this->ros_node->declare_parameter("floor_heights", std::vector<double>{0.0, 2.5, 5.0, 7.5});
         this->floor_heights = this->ros_node->get_parameter("floor_heights").as_double_array();
 
@@ -433,6 +438,7 @@ namespace gazebo
           if (current_height >= target_height - 0.05)
           {
               // Arrived - start opening doors
+              this->SetElevatorHeight(target_height);
               this->model->SetLinearVel(ignition::math::Vector3d(0, 0, 0));
               this->current_floor = this->target_floor;
               this->current_state = OPENING_DOORS;  // Go to door opening, not IDLE
@@ -455,6 +461,7 @@ namespace gazebo
           if (current_height <= target_height + 0.05)
           {
               // Arrived - start opening doors
+              this->SetElevatorHeight(target_height);
               this->model->SetLinearVel(ignition::math::Vector3d(0, 0, 0));
               this->current_floor = this->target_floor;
               this->current_state = OPENING_DOORS;  // Go to door opening, not IDLE
