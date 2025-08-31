@@ -48,7 +48,8 @@ def generate_launch_description():
     )
 
     elevator_scheduler = TimerAction(
-        period=16.0,  # Start scheduler after all elevators are spawned
+        period=16.0,  # Increased from 12.0 to 16.0 seconds to ensure all elevators are fully spawned before starting the scheduler.
+        # This accounts for possible delays in the elevator spawning process and avoids race conditions.
         actions=[
             Node(
                 package='elevator_simulation',
