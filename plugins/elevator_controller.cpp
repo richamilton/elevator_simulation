@@ -113,7 +113,7 @@ namespace gazebo
         // - On the ground floor (floor 0) the floor is the ground
         // - To make elevator platform flush with ground, we set the ground floor height to -0.1
         // - Default heights: {-0.1, 2.5, 5.0, 7.5}
-        this->ros_node->declare_parameter("floor_heights", std::vector<double>{0.0, 2.5, 5.0, 7.5});
+        this->ros_node->declare_parameter("floor_heights", std::vector<double>{-0.1, 2.5, 5.0, 7.5});
         this->floor_heights = this->ros_node->get_parameter("floor_heights").as_double_array();
 
         if (this->sdf->HasElement("movement_speed")) {
