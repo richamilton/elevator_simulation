@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypes="xml"?>
 <package format="3">
-  <name>elevator_simulation</name>
+  <name>avdr_gz_worlds</name>
   <version>1.0.0</version>
   <description>Multi-floor robot navigation with elevator simulation</description>
   
