@@ -380,6 +380,33 @@ class ElevatorScheduler(Node):
             self.get_logger().error(f'Failed to send goto command to elevator {elevator_id}: {e}')
             return False
     
+    def hold_elevator_at_floor(self, elevator_id: int, target_floor: int) -> bool:
+        """Send a specific elevator to a specific floor"""
+        if elevator_id not in self.elevator_goto_clients:
+            self.get_logger().error(f'No client for elevator {elevator_id}')
+            return False
+        
+        # Use hold request to send elevator for pickup
+        client = self.elevator_hold_clients[elevator_id]
+        
+        if not client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().warn(f'Hold service not available for elevator {elevator_id}')
+            return False
+        
+        try:
+            hold_request = AddTwoInts.Request()
+            hold_request.a = target_floor
+
+            future = client.call_async(hold_request)
+            # In a full implementation, you'd wait for the response
+
+            self.get_logger().info(f'Sent hold command to elevator {elevator_id} for floor {target_floor}')
+            return True
+        
+        except Exception as e:
+            self.get_logger().error(f'Failed to send hold command to elevator {elevator_id}: {e}')
+            return False
+    
     def floor_callback(self, msg: Int32, elevator_id: int):
         """Update elevator floor information"""
         with self.lock:
@@ -541,6 +568,18 @@ class ElevatorScheduler(Node):
             self.handle_transporting_single_elevator_request_state()
     
     def handle_idle_single_elevator_request_state(self):
+        # Send release command to each elevator
+        elevator_id = self.single_elevator_request.elevator.elevator_id
+        client = self.elevator_release_clients[elevator_id]
+
+        if client.wait_for_service(timeout_sec=1.0):
+            release_request = AddTwoInts.Request()
+            release_request.a = 0  # Dummy value
+            
+            future = client.call_async(release_request)
+            
+            self.get_logger().info(f'Released elevator {elevator_id}')
+        self.elevators[self.single_elevator_request.elevator.elevator_id].available_for_call = True
         self.single_elevator_request.clear()
         self.get_logger().info('Single elevator request cleared and ready for new requests')
     
@@ -548,7 +587,7 @@ class ElevatorScheduler(Node):
         self.get_logger().info(f'Elevator {self.single_elevator_request.elevator.elevator_id} is en route!')
 
         # Send elevator to the requested floor
-        self.send_elevator_to_floor(
+        self.hold_elevator_at_floor(
             self.single_elevator_request.elevator.elevator_id,
             self.single_elevator_request.from_floor
         )
