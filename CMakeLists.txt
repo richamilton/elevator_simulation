@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(elevator_simulation)
+project(avdr_gz_worlds)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -59,6 +59,10 @@ install(DIRECTORY config/
 
 install(DIRECTORY models/
   DESTINATION share/${PROJECT_NAME}/models
+)
+
+install(DIRECTORY worlds/
+  DESTINATION share/${PROJECT_NAME}/worlds
 )
 
 if(BUILD_TESTING)
