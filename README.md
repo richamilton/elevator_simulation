@@ -1,4 +1,4 @@
-# avdr_gz_world
+# avdr_gz_worlds
 
 A ROS 2 package providing a classic Gazebo (Gazebo 11 / Gazebo Classic) simulation environment for multi-floor robot navigation with elevator simulation. It includes a 4-floor building world, elevator car models, a C++ Gazebo model plugin for individual elevator control, and a Python ROS 2 node for high-level elevator scheduling and coordination.
 
