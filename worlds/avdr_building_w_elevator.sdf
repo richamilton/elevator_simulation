@@ -4080,7 +4080,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='left_wall'>
         <gravity>0</gravity>
@@ -4131,7 +4131,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='right_wall'>
         <gravity>0</gravity>
@@ -4182,7 +4182,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='elevator_door'>
         <gravity>0</gravity>
@@ -4233,7 +4233,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='floor_display'>
         <gravity>0</gravity>
@@ -4284,7 +4284,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='floor_number'>
         <gravity>0</gravity>
@@ -4315,7 +4315,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <joint name='platform_to_back_wall' type='fixed'>
         <parent>platform</parent>
@@ -4473,7 +4473,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='left_wall'>
         <gravity>0</gravity>
@@ -4524,7 +4524,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='right_wall'>
         <gravity>0</gravity>
@@ -4575,7 +4575,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='elevator_door'>
         <gravity>0</gravity>
@@ -4626,7 +4626,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='floor_display'>
         <gravity>0</gravity>
@@ -4677,7 +4677,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='floor_number'>
         <gravity>0</gravity>
@@ -4708,7 +4708,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <joint name='platform_to_back_wall' type='fixed'>
         <parent>platform</parent>
@@ -4866,7 +4866,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='left_wall'>
         <gravity>0</gravity>
@@ -4917,7 +4917,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='right_wall'>
         <gravity>0</gravity>
@@ -4968,7 +4968,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='elevator_door'>
         <gravity>0</gravity>
@@ -5019,7 +5019,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='floor_display'>
         <gravity>0</gravity>
@@ -5070,7 +5070,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='floor_number'>
         <gravity>0</gravity>
@@ -5101,7 +5101,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <joint name='platform_to_back_wall' type='fixed'>
         <parent>platform</parent>
@@ -5259,7 +5259,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='left_wall'>
         <gravity>0</gravity>
@@ -5310,7 +5310,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='right_wall'>
         <gravity>0</gravity>
@@ -5361,7 +5361,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='elevator_door'>
         <gravity>0</gravity>
@@ -5412,7 +5412,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='floor_display'>
         <gravity>0</gravity>
@@ -5463,7 +5463,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <link name='floor_number'>
         <gravity>0</gravity>
@@ -5494,7 +5494,7 @@
         </visual>
         <self_collide>0</self_collide>
         <enable_wind>0</enable_wind>
-        <kinematic>0</kinematic>
+        <kinematic>1</kinematic>
       </link>
       <joint name='platform_to_back_wall' type='fixed'>
         <parent>platform</parent>

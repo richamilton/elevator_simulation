@@ -206,8 +206,6 @@ public:
         double dt = std::chrono::duration<double>(_info.dt).count();
         double sim_time = std::chrono::duration<double>(_info.simTime).count();
 
-        bool was_moving = (this->current_state == MOVING_UP || this->current_state == MOVING_DOWN);
-
         switch (this->current_state)
         {
             case IDLE:          HandleIdleState(_ecm, sim_time);           break;
@@ -217,25 +215,11 @@ public:
             case OPENING_DOORS: HandleOpeningDoorsState(_ecm, sim_time);   break;
         }
 
-        // Re-apply elevator + door position every tick.
-        // While moving, update every tick; while stationary, throttle to ~100ms
-        // to avoid fighting the physics engine (causes jitter).
-        bool is_moving = (this->current_state == MOVING_UP || this->current_state == MOVING_DOWN);
-        if (is_moving || was_moving)
-        {
-            SetElevatorHeight(_ecm, this->current_z);
-            SetDoorPosition(_ecm, this->current_door_position);
-        }
-        else
-        {
-            this->hold_timer += dt;
-            if (this->hold_timer >= 0.1)
-            {
-                this->hold_timer = 0.0;
-                SetElevatorHeight(_ecm, this->current_z);
-                SetDoorPosition(_ecm, this->current_door_position);
-            }
-        }
+        // Re-apply elevator and door position every tick.
+        // WorldPoseCmd is consumed each physics step, so we must re-issue it
+        // every PreUpdate to prevent the physics engine from drifting the model.
+        SetElevatorHeight(_ecm, this->current_z);
+        SetDoorPosition(_ecm, this->current_door_position);
 
         PublishStatus(_ecm);
     }
@@ -529,7 +513,6 @@ private:
     double state_start_time{0.0};
     double current_z{0.0};
     double current_door_position{0.0};
-    double hold_timer{0.0};
     ignition::math::Pose3d initial_pose;
 
     std::mt19937 generator;
