@@ -59,8 +59,15 @@ def generate_launch_description():
         get_package_share_directory('avdr_gz_worlds'), '..', '..', 'lib', 'avdr_gz_worlds'
     )
     set_plugin_path = SetEnvironmentVariable(
+        name='IGN_GAZEBO_SYSTEM_PLUGIN_PATH',
+        value=[plugin_lib_path, ':', os.environ.get('IGN_GAZEBO_SYSTEM_PLUGIN_PATH', '')]
+    )
+
+    # Prevent Ignition from falling back to the Classic Gazebo plugin path,
+    # which may contain stale Classic-API plugins from other workspaces.
+    clear_gazebo_plugin_path = SetEnvironmentVariable(
         name='GAZEBO_PLUGIN_PATH',
-        value=[plugin_lib_path, ':', os.environ.get('GAZEBO_PLUGIN_PATH', '')]
+        value=''
     )
 
     declare_world_name = DeclareLaunchArgument(
@@ -85,6 +92,7 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            clear_gazebo_plugin_path,
             set_plugin_path,
             declare_world_name,
             declare_gz_headless_mode,

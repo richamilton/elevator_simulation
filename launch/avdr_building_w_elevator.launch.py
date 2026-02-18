@@ -25,7 +25,6 @@ from launch.actions import (
     DeclareLaunchArgument,
     IncludeLaunchDescription,
     OpaqueFunction,
-    SetEnvironmentVariable,
     TimerAction,
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -39,17 +38,15 @@ def launch_setup(context):
     package_dir = get_package_share_directory('avdr_gz_worlds')
     world_sdf_path = os.path.join(package_dir, 'worlds', 'avdr_building_w_elevator.sdf')
 
-    # Launch Classic Gazebo with the building world loaded at startup
-    gazebo_launch_file = "gzserver.launch.py" if gz_headless_mode.lower() == "true" else "gazebo.launch.py"
+    gz_args = f"-r -v {gz_log_level} {world_sdf_path}"
+    if eval(gz_headless_mode):
+        gz_args = "--headless-rendering -s " + gz_args
+
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare("gazebo_ros"), "launch", gazebo_launch_file])
+            PathJoinSubstitution([FindPackageShare("ros_gz_sim"), "launch", "gz_sim.launch.py"])
         ),
-        launch_arguments={
-            "world": world_sdf_path,
-            "verbose": "true" if int(gz_log_level) >= 3 else "false",
-            "pause": "false",
-        }.items()
+        launch_arguments={"gz_args": gz_args, "on_exit_shutdown": "true"}.items()
     )
 
     # Start elevator scheduler after building + elevators are fully spawned
