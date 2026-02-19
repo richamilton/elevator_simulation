@@ -66,6 +66,9 @@ public:
         if (_sdf->HasElement("movement_speed"))
             this->movement_speed = _sdf->Get<double>("movement_speed");
 
+        if (_sdf->HasElement("movement_accel"))
+            this->movement_accel = _sdf->Get<double>("movement_accel");
+
         if (_sdf->HasElement("door_operation_time"))
             this->door_operation_time = _sdf->Get<double>("door_operation_time");
 
@@ -138,20 +141,9 @@ public:
         if (!_ecm.Component<ignition::gazebo::components::Pose>(this->model.Entity()))
             _ecm.CreateComponent(this->model.Entity(), ignition::gazebo::components::Pose());
 
-        // Lock the spawn XY + yaw — only Z changes during operation.
-        // We use the SDF-specified pose for X/Y/rotation, but always drive Z
-        // from floor_heights so the elevator starts at the correct floor height.
-        auto * model_pose = _ecm.Component<ignition::gazebo::components::Pose>(this->model.Entity());
-        ignition::math::Pose3d spawn_pose = model_pose ? model_pose->Data() : ignition::math::Pose3d::Zero;
-        // Store only X, Y, rotation as the anchor; Z is always driven by current_z
-        this->initial_pose = ignition::math::Pose3d(
-            spawn_pose.Pos().X(),
-            spawn_pose.Pos().Y(),
-            this->floor_heights[this->current_floor],
-            spawn_pose.Rot().Roll(),
-            spawn_pose.Rot().Pitch(),
-            spawn_pose.Rot().Yaw()
-        );
+        // initial_pose is captured on the first PreUpdate tick once the ECM
+        // has been fully populated by the physics system.
+        this->pose_initialized = false;
 
         // Set initial state
         SetElevatorHeight(_ecm, this->floor_heights[this->current_floor]);
@@ -203,6 +195,36 @@ public:
         if (_info.paused)
             return;
 
+        // Capture spawn X/Y on first tick that the ECM has a non-zero pose.
+        // Retry each tick until valid — the physics system may need a few ticks
+        // to populate the Pose component from the SDF world pose.
+        if (!this->pose_initialized)
+        {
+            auto * pose_c = _ecm.Component<ignition::gazebo::components::Pose>(this->model.Entity());
+            if (pose_c)
+            {
+                const auto & p = pose_c->Data();
+                // Wait until X or Y is non-zero (i.e. not the default identity pose)
+                if (std::abs(p.Pos().X()) > 0.001 || std::abs(p.Pos().Y()) > 0.001)
+                {
+                    this->initial_pose = ignition::math::Pose3d(
+                        p.Pos().X(),
+                        p.Pos().Y(),
+                        this->floor_heights[this->current_floor],
+                        p.Rot().Roll(),
+                        p.Rot().Pitch(),
+                        p.Rot().Yaw()
+                    );
+                    this->pose_initialized = true;
+                    ignmsg << "ElevatorController " << elevator_id
+                           << ": pose locked X=" << p.Pos().X()
+                           << " Y=" << p.Pos().Y() << "\n";
+                }
+            }
+            // Don't run state machine or apply commands until pose is known
+            return;
+        }
+
         double dt = std::chrono::duration<double>(_info.dt).count();
         double sim_time = std::chrono::duration<double>(_info.simTime).count();
 
@@ -215,13 +237,18 @@ public:
             case OPENING_DOORS: HandleOpeningDoorsState(_ecm, sim_time);   break;
         }
 
-        // Re-apply elevator and door position every tick.
-        // WorldPoseCmd is consumed each physics step, so we must re-issue it
-        // every PreUpdate to prevent the physics engine from drifting the model.
+        // Always re-apply elevator pose every tick to prevent the model drifting
+        // when WorldPoseCmd is not actively issued (Ignition drops the constraint).
+        // Door position is only re-applied when animating to avoid joint flicker.
         SetElevatorHeight(_ecm, this->current_z);
-        SetDoorPosition(_ecm, this->current_door_position);
 
-        PublishStatus(_ecm);
+        bool doors_animating = (this->current_state == OPENING_DOORS || this->current_state == CLOSING_DOORS);
+        if (doors_animating)
+            SetDoorPosition(_ecm, this->current_door_position);
+
+        // Publish ROS status at ~10 Hz
+        if (++this->tick_counter % 100 == 0)
+            PublishStatus(_ecm);
     }
 
     ~ElevatorController()
@@ -320,12 +347,14 @@ private:
 
             if (this->target_floor > this->current_floor)
             {
+                this->move_origin_z = this->current_z;
                 this->current_state = MOVING_UP;
                 RCLCPP_INFO(ros_node->get_logger(),
                     "Elevator %d: moving up to floor %d", elevator_id, target_floor);
             }
             else if (this->target_floor < this->current_floor)
             {
+                this->move_origin_z = this->current_z;
                 this->current_state = MOVING_DOWN;
                 RCLCPP_INFO(ros_node->get_logger(),
                     "Elevator %d: moving down to floor %d", elevator_id, target_floor);
@@ -344,17 +373,46 @@ private:
         }
     }
 
+    // Trapezoidal velocity profile: ramp up → cruise → ramp down.
+    // Returns the velocity to use given distance travelled and distance remaining.
+    double TrapezoidalVelocity(double dist_travelled, double dist_remaining)
+    {
+        double ramp_dist = (this->movement_speed * this->movement_speed) / (2.0 * this->movement_accel);
+        double total = dist_travelled + dist_remaining;
+
+        double v;
+        if (total < 2.0 * ramp_dist)
+        {
+            // Short travel: triangle profile — peak at midpoint
+            double half = total / 2.0;
+            if (dist_travelled < half)
+                v = std::sqrt(2.0 * this->movement_accel * dist_travelled);
+            else
+                v = std::sqrt(2.0 * this->movement_accel * dist_remaining);
+        }
+        else if (dist_travelled < ramp_dist)
+            v = std::sqrt(2.0 * this->movement_accel * dist_travelled);  // ramp up
+        else if (dist_remaining < ramp_dist)
+            v = std::sqrt(2.0 * this->movement_accel * dist_remaining);  // ramp down
+        else
+            v = this->movement_speed;  // cruise
+
+        return std::max(v, this->movement_speed * 0.05);  // minimum 5% speed to always make progress
+    }
+
     void HandleMovingUpState(
-        ignition::gazebo::EntityComponentManager & _ecm, double sim_time, double dt)
+        ignition::gazebo::EntityComponentManager & /*_ecm*/, double sim_time, double dt)
     {
         double target_z = this->floor_heights[this->target_floor];
-        double step = this->movement_speed * dt;
-        double new_z = std::min(this->current_z + step, target_z);
-        SetElevatorHeight(_ecm, new_z);
+        double dist_remaining = target_z - this->current_z;
+        double dist_travelled = this->current_z - this->move_origin_z;
+        double v = TrapezoidalVelocity(std::max(dist_travelled, 0.0), dist_remaining);
+        double new_z = std::min(this->current_z + v * dt, target_z);
         this->current_z = new_z;
 
         if (new_z >= target_z)
         {
+            this->current_z = target_z;
             this->current_floor = this->target_floor;
             this->current_state = OPENING_DOORS;
             this->state_start_time = sim_time;
@@ -364,16 +422,18 @@ private:
     }
 
     void HandleMovingDownState(
-        ignition::gazebo::EntityComponentManager & _ecm, double sim_time, double dt)
+        ignition::gazebo::EntityComponentManager & /*_ecm*/, double sim_time, double dt)
     {
         double target_z = this->floor_heights[this->target_floor];
-        double step = this->movement_speed * dt;
-        double new_z = std::max(this->current_z - step, target_z);
-        SetElevatorHeight(_ecm, new_z);
+        double dist_remaining = this->current_z - target_z;
+        double dist_travelled = this->move_origin_z - this->current_z;
+        double v = TrapezoidalVelocity(std::max(dist_travelled, 0.0), dist_remaining);
+        double new_z = std::max(this->current_z - v * dt, target_z);
         this->current_z = new_z;
 
         if (new_z <= target_z)
         {
+            this->current_z = target_z;
             this->current_floor = this->target_floor;
             this->current_state = OPENING_DOORS;
             this->state_start_time = sim_time;
@@ -390,6 +450,8 @@ private:
         {
             this->doors_open = true;
             SetDoorPosition(_ecm, this->door_open_position);
+            // Hard-snap current_z to eliminate any accumulated floating point drift
+            this->current_z = this->floor_heights[this->current_floor];
             this->current_state = IDLE;
             this->state_start_time = sim_time;
             this->stop_duration = GetRandomStopDuration();
@@ -499,7 +561,8 @@ private:
     int target_floor{0};
     bool doors_open{true};
 
-    double movement_speed{1.0};
+    double movement_speed{3.0};
+    double movement_accel{1.5};  // m/s² — ramp up/down acceleration
     double door_operation_time{2.0};
     double stop_duration_min{10.0};
     double stop_duration_max{15.0};
@@ -512,7 +575,10 @@ private:
     OperatingMode operating_mode{AUTONOMOUS};
     double state_start_time{0.0};
     double current_z{0.0};
+    double move_origin_z{0.0};
     double current_door_position{0.0};
+    uint64_t tick_counter{0};
+    bool pose_initialized{false};
     ignition::math::Pose3d initial_pose;
 
     std::mt19937 generator;
