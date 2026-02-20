@@ -2717,7 +2717,7 @@
       <static>0</static>
       <pose>1.53185 4.325 0.0 0 0 -1.5708</pose>
       <link name='platform'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose>0 0 0.05 0 -0 0</pose>
         <gravity>0</gravity>
         <kinematic>1</kinematic>
         <inertial>
@@ -2984,14 +2984,14 @@
         <initial_floor>0</initial_floor>
         <initial_doors_open>1</initial_doors_open>
         <door_open_direction>-1</door_open_direction>
-        <floor_heights>[0.0, 2.45, 4.95, 7.45]</floor_heights>
+        <floor_heights>[-0.1, 2.5, 5, 7.5]</floor_heights>
       </plugin>
     </model>
     <model name='elevator_2'>
       <static>0</static>
       <pose>4.01815 4.325 2.45 0 0 -1.5708</pose>
       <link name='platform'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose>0 0 0.05 0 -0 0</pose>
         <gravity>0</gravity>
         <kinematic>1</kinematic>
         <inertial>
@@ -3258,14 +3258,14 @@
         <initial_floor>1</initial_floor>
         <initial_doors_open>1</initial_doors_open>
         <door_open_direction>1</door_open_direction>
-        <floor_heights>[0.0, 2.45, 4.95, 7.45]</floor_heights>
+        <floor_heights>[-0.1, 2.5, 5, 7.5]</floor_heights>
       </plugin>
     </model>
     <model name='elevator_3'>
       <static>0</static>
       <pose>1.53185 0.025 4.95 0 -0 1.5708</pose>
       <link name='platform'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose>0 0 0.05 0 -0 0</pose>
         <gravity>0</gravity>
         <kinematic>1</kinematic>
         <inertial>
@@ -3532,14 +3532,14 @@
         <initial_floor>2</initial_floor>
         <initial_doors_open>0</initial_doors_open>
         <door_open_direction>1</door_open_direction>
-        <floor_heights>[0.0, 2.45, 4.95, 7.45]</floor_heights>
+        <floor_heights>[-0.1, 2.5, 5, 7.5]</floor_heights>
       </plugin>
     </model>
     <model name='elevator_4'>
       <static>0</static>
       <pose>4.01815 0.025 7.45 0 -0 1.5708</pose>
       <link name='platform'>
-        <pose>0 0 0 0 -0 0</pose>
+        <pose>0 0 0.05 0 -0 0</pose>
         <gravity>0</gravity>
         <kinematic>1</kinematic>
         <inertial>
@@ -3806,7 +3806,7 @@
         <initial_floor>3</initial_floor>
         <initial_doors_open>1</initial_doors_open>
         <door_open_direction>-1</door_open_direction>
-        <floor_heights>[0.0, 2.45, 4.95, 7.45]</floor_heights>
+        <floor_heights>[-0.1, 2.5, 5, 7.5]</floor_heights>
       </plugin>
     </model>
     <gui fullscreen='0'>
