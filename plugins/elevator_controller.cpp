@@ -208,9 +208,6 @@ public:
             if (pose_c)
             {
                 const auto & p = pose_c->Data();
-                RCLCPP_WARN(this->ros_node->get_logger(),
-                    "DEBUG Initialization Elevator %d SDF model pose: x=%f y=%f z=%f",
-                    this->elevator_id, p.Pos().X(), p.Pos().Y(), p.Pos().Z());
 
                 // SDF pose is in world coordinates for top-level models
                 // Store model's pose, accounting for platform link offset (0.05m)
@@ -247,13 +244,7 @@ public:
         // Always re-apply elevator pose every tick to prevent the model drifting
         // when WorldPoseCmd is not actively issued (Ignition drops the constraint).
         // Door position is only re-applied when animating to avoid joint flicker.
-        RCLCPP_INFO(ros_node->get_logger(),
-            "Elevator %d DEBUG: update z=%f",
-            elevator_id, this->current_z);
         SetElevatorHeight(_ecm, this->current_z);
-        RCLCPP_INFO(ros_node->get_logger(),
-            "Elevator %d DEBUG: postupdate z=%f",
-            elevator_id, _ecm.Component<ignition::gazebo::components::WorldPose>(this->model.Entity())->Data().Pos().Z());
 
         bool doors_animating = (this->current_state == OPENING_DOORS || this->current_state == CLOSING_DOORS);
         if (doors_animating)
@@ -425,9 +416,6 @@ private:
 
         if (new_z >= target_z)
         {
-            RCLCPP_INFO(ros_node->get_logger(),
-                "Elevator %d DEBUG: target floor %d, current z %f, target z %f", elevator_id, this->target_floor, this->current_z, target_z);
-            this->current_z = target_z;
             this->current_floor = this->target_floor;
             this->current_state = OPENING_DOORS;
             this->state_start_time = sim_time;
@@ -448,9 +436,6 @@ private:
 
         if (new_z <= target_z)
         {
-            RCLCPP_INFO(ros_node->get_logger(),
-                "Elevator %d DEBUG: target floor %d, current z %f, target z %f", elevator_id, this->target_floor, this->current_z, target_z);
-            this->current_z = target_z;
             this->current_floor = this->target_floor;
             this->current_state = OPENING_DOORS;
             this->state_start_time = sim_time;
@@ -501,7 +486,7 @@ private:
         // z parameter is the desired platform surface height
         // initial_pose stores model origin, which is 0.05m below platform
         ignition::math::Pose3d cmd_pose = this->initial_pose;
-        cmd_pose.Pos().Z() = z - 0.05;  // Model origin is 0.05m below platform
+        cmd_pose.Pos().Z() = z;  // Model origin is 0.05m below platform
 
         // Directly set the WorldPoseCmd component to command the model position
         auto * pose_c = _ecm.Component<ignition::gazebo::components::WorldPoseCmd>(this->model.Entity());
@@ -512,13 +497,6 @@ private:
         else
         {
             _ecm.CreateComponent(this->model.Entity(), ignition::gazebo::components::WorldPoseCmd(cmd_pose));
-        }
-
-        if (ros_node)
-        {
-            RCLCPP_WARN(this->ros_node->get_logger(),
-                "DEBUG SetElevatorHeight Elevator %d model pose: x=%f y=%f z=%f",
-                this->elevator_id, cmd_pose.Pos().X(), cmd_pose.Pos().Y(), cmd_pose.Pos().Z());
         }
     }
 
@@ -532,7 +510,7 @@ private:
         door_msg.data = this->doors_open;
         this->door_state_pub->publish(door_msg);
 
-        auto * pose_comp = _ecm.Component<ignition::gazebo::components::WorldPose>(this->model.Entity());
+        auto * pose_comp = _ecm.Component<ignition::gazebo::components::Pose>(this->model.Entity());
         if (pose_comp)
         {
             geometry_msgs::msg::PoseStamped pose_msg;

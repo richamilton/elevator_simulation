@@ -1,5 +1,12 @@
 <sdf version='1.7'>
   <world name='default'>
+    <plugin filename="ignition-gazebo-contact-system" name="gz::sim::systems::Contact" />
+    <plugin filename="ignition-gazebo-imu-system" name="gz::sim::systems::Imu" />
+    <plugin filename="ignition-gazebo-physics-system" name="gz::sim::systems::Physics" />
+    <plugin filename="ignition-gazebo-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster" />
+    <plugin filename="ignition-gazebo-sensors-system" name="gz::sim::systems::Sensors" />
+    <plugin filename="ignition-gazebo-user-commands-system" name="gz::sim::systems::UserCommands" />
+    
     <light name='sun' type='directional'>
       <cast_shadows>1</cast_shadows>
       <pose>0 0 10 0 -0 0</pose>
@@ -2714,7 +2721,7 @@
       <static>1</static>
     </model>
     <model name='elevator_1'>
-      <static>0</static>
+      <static>1</static>
       <pose>1.53185 4.325 0.0 0 0 -1.5708</pose>
       <link name='platform'>
         <pose>0 0 0.05 0 -0 0</pose>
@@ -2988,7 +2995,7 @@
       </plugin>
     </model>
     <model name='elevator_2'>
-      <static>0</static>
+      <static>1</static>
       <pose>4.01815 4.325 2.45 0 0 -1.5708</pose>
       <link name='platform'>
         <pose>0 0 0.05 0 -0 0</pose>
@@ -3262,7 +3269,7 @@
       </plugin>
     </model>
     <model name='elevator_3'>
-      <static>0</static>
+      <static>1</static>
       <pose>1.53185 0.025 4.95 0 -0 1.5708</pose>
       <link name='platform'>
         <pose>0 0 0.05 0 -0 0</pose>
@@ -3536,7 +3543,7 @@
       </plugin>
     </model>
     <model name='elevator_4'>
-      <static>0</static>
+      <static>1</static>
       <pose>4.01815 0.025 7.45 0 -0 1.5708</pose>
       <link name='platform'>
         <pose>0 0 0.05 0 -0 0</pose>
