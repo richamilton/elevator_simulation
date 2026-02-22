@@ -3,6 +3,7 @@
 #include <ignition/gazebo/Util.hh>
 #include <ignition/gazebo/components/JointPosition.hh>
 #include <ignition/gazebo/components/JointPositionReset.hh>
+#include <ignition/gazebo/components/JointVelocityCmd.hh>
 
 #include <ignition/gazebo/components/Pose.hh>
 #include <ignition/gazebo/components/PoseCmd.hh>
@@ -119,6 +120,13 @@ public:
         this->stop_duration = GetRandomStopDuration();
 
         // Find door joint and platform link
+        this->elevator_joint = this->model.JointByName(_ecm, "elevator_joint");
+        if (this->elevator_joint == ignition::gazebo::kNullEntity)
+        {
+            ignerr << "ElevatorController " << elevator_id << ": Could not find elevator_joint\n";
+            return;
+        }
+
         this->door_joint = this->model.JointByName(_ecm, "door_joint");
         if (this->door_joint == ignition::gazebo::kNullEntity)
         {
@@ -141,7 +149,8 @@ public:
 
         if (!_ecm.Component<ignition::gazebo::components::Pose>(this->model.Entity()))
             _ecm.CreateComponent(this->model.Entity(), ignition::gazebo::components::Pose());
-
+        if (!_ecm.Component<ignition::gazebo::components::JointPosition>(this->elevator_joint))
+           _ecm.CreateComponent(this->elevator_joint, ignition::gazebo::components::JointPosition());
         // initial_pose is captured on the first PreUpdate tick once the ECM
         // has been fully populated by the physics system.
         this->pose_initialized = false;
@@ -221,30 +230,33 @@ public:
                     p.Rot().Yaw()
                 );
                 this->pose_initialized = true;
+                this->SetElevatorPosition(_ecm, this->initial_pose.Pos().Z());
+                this->SetElevatorHeight(_ecm, this->initial_pose.Pos().Z());
+                
                 RCLCPP_WARN(this->ros_node->get_logger(),
                     "Elevator %d: pose locked X=%f Y=%f Z=%f",
                     elevator_id, p.Pos().X(), p.Pos().Y(), this->initial_pose.Pos().Z());
+                
             }
             // Don't run state machine or apply commands until pose is known
             return;
         }
 
-        double dt = std::chrono::duration<double>(_info.dt).count();
         double sim_time = std::chrono::duration<double>(_info.simTime).count();
 
         switch (this->current_state)
         {
             case IDLE:          HandleIdleState(_ecm, sim_time);           break;
             case CLOSING_DOORS: HandleClosingDoorsState(_ecm, sim_time);   break;
-            case MOVING_UP:     HandleMovingUpState(_ecm, sim_time, dt);   break;
-            case MOVING_DOWN:   HandleMovingDownState(_ecm, sim_time, dt); break;
+            case MOVING_UP:     HandleMovingUpState(_ecm, sim_time);   break;
+            case MOVING_DOWN:   HandleMovingDownState(_ecm, sim_time); break;
             case OPENING_DOORS: HandleOpeningDoorsState(_ecm, sim_time);   break;
         }
 
         // Always re-apply elevator pose every tick to prevent the model drifting
         // when WorldPoseCmd is not actively issued (Ignition drops the constraint).
         // Door position is only re-applied when animating to avoid joint flicker.
-        SetElevatorHeight(_ecm, this->current_z);
+        // SetElevatorHeight(_ecm, this->current_z);
 
         bool doors_animating = (this->current_state == OPENING_DOORS || this->current_state == CLOSING_DOORS);
         if (doors_animating)
@@ -405,42 +417,70 @@ private:
     }
 
     void HandleMovingUpState(
-        ignition::gazebo::EntityComponentManager & /*_ecm*/, double sim_time, double dt)
+        ignition::gazebo::EntityComponentManager & _ecm, double sim_time)
     {
         double target_z = this->floor_heights[this->target_floor];
-        double dist_remaining = target_z - this->current_z;
-        double dist_travelled = this->current_z - this->move_origin_z;
-        double v = TrapezoidalVelocity(std::max(dist_travelled, 0.0), dist_remaining);
-        double new_z = std::min(this->current_z + v * dt, target_z);
-        this->current_z = new_z;
-
-        if (new_z >= target_z)
+        this->current_z = _ecm.Component<ignition::gazebo::components::JointPosition>(this->elevator_joint)->Data()[0];
+        if (this->current_z >= target_z)
         {
+            // // Hard-snap current_z to eliminate any accumulated floating point drift
+            // this->SetElevatorHeight(_ecm, target_z);
+            // Bring elevator to a stop
+            this->SetElevatorVelocity(_ecm, 0.0);
+
+            // this->current_z = target_z;
             this->current_floor = this->target_floor;
             this->current_state = OPENING_DOORS;
             this->state_start_time = sim_time;
             RCLCPP_INFO(ros_node->get_logger(),
                 "Elevator %d: arrived at floor %d", elevator_id, current_floor);
         }
+        else {
+            // Determine velocity based on trapezoidal profile
+            double dist_remaining = target_z - this->current_z;
+            double dist_travelled = this->current_z - this->move_origin_z;
+            double v = TrapezoidalVelocity(std::max(dist_travelled, 0.0), dist_remaining);
+            // Apply velocity command to move the elevator up
+            this->SetElevatorVelocity(_ecm, v);
+        }
     }
 
     void HandleMovingDownState(
-        ignition::gazebo::EntityComponentManager & /*_ecm*/, double sim_time, double dt)
+        ignition::gazebo::EntityComponentManager & _ecm, double sim_time)
     {
-        double target_z = this->floor_heights[this->target_floor];
-        double dist_remaining = this->current_z - target_z;
-        double dist_travelled = this->move_origin_z - this->current_z;
-        double v = TrapezoidalVelocity(std::max(dist_travelled, 0.0), dist_remaining);
-        double new_z = std::max(this->current_z - v * dt, target_z);
-        this->current_z = new_z;
 
-        if (new_z <= target_z)
+        double target_z = this->floor_heights[this->target_floor];
+        this->current_z = _ecm.Component<ignition::gazebo::components::JointPosition>(this->elevator_joint)->Data()[0];
+
+        // Check if velocity command component exists
+        auto *vel_cmd = _ecm.Component<ignition::gazebo::components::JointVelocityCmd>(this->elevator_joint);
+        double current_vel_cmd = vel_cmd ? vel_cmd->Data()[0] : 0.0;
+
+        this->current_z = std::round(this->current_z * 1000.0) / 1000.0;
+        if (this->current_z <= target_z || (this->current_z == 0))
         {
+            // // Hard-snap current_z to eliminate any accumulated floating point drift
+            // this->SetElevatorHeight(_ecm, target_z);
+            // Bring elevator to a stop
+            this->SetElevatorVelocity(_ecm, 0.0);
+
+            // this->current_z = target_z;
             this->current_floor = this->target_floor;
             this->current_state = OPENING_DOORS;
             this->state_start_time = sim_time;
             RCLCPP_INFO(ros_node->get_logger(),
-                "Elevator %d: arrived at floor %d", elevator_id, current_floor);
+            "Elevator %d: arrived at floor %d", elevator_id, current_floor);
+        }
+        else {
+            // Determine velocity based on trapezoidal profile
+            double dist_remaining = this->current_z - target_z;
+            double dist_travelled = this->move_origin_z - this->current_z;
+            double v = TrapezoidalVelocity(std::max(dist_travelled, 0.0), dist_remaining);
+            // Apply velocity command to move the elevator down
+            this->SetElevatorVelocity(_ecm, -v);
+            RCLCPP_INFO(ros_node->get_logger(),
+            "Elevator %d: moving down v_cmd=%.3f actual_v_cmd=%.3f current_z=%.3f target_z=%.3f",
+            elevator_id, -v, current_vel_cmd, this->current_z, target_z);
         }
     }
 
@@ -480,6 +520,32 @@ private:
     }
 
     void SetElevatorHeight(ignition::gazebo::EntityComponentManager & _ecm, double z)
+    {
+        auto *c = _ecm.Component<ignition::gazebo::components::JointPositionReset>(this->elevator_joint);
+        if (c)
+            c->Data() = {z};
+        else
+            _ecm.CreateComponent(this->elevator_joint,
+                ignition::gazebo::components::JointPositionReset({z}));
+    }
+
+    void SetElevatorVelocity(ignition::gazebo::EntityComponentManager & _ecm, double v)
+    {
+        auto *cmd = _ecm.Component<ignition::gazebo::components::JointVelocityCmd>(this->elevator_joint);
+
+        if (cmd)
+        {
+            cmd->Data() = {v};
+        }
+        else
+        {
+            _ecm.CreateComponent(
+                this->elevator_joint,
+                ignition::gazebo::components::JointVelocityCmd({v}));
+        }
+    }
+
+    void SetElevatorPosition(ignition::gazebo::EntityComponentManager & _ecm, double z)
     {
         // Always use the locked initial XY + yaw so physics/collisions cannot
         // drift the elevator horizontally. Only Z is allowed to change.
@@ -549,6 +615,7 @@ private:
     // ── Members ────────────────────────────────────────────────────────────
 
     ignition::gazebo::Model model;
+    ignition::gazebo::Entity elevator_joint{ignition::gazebo::kNullEntity};
     ignition::gazebo::Entity door_joint{ignition::gazebo::kNullEntity};
     ignition::gazebo::Entity platform_link{ignition::gazebo::kNullEntity};
 

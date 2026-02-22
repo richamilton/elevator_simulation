@@ -131,7 +131,7 @@
           <pose>2.775 2.175 0.05 0 -0 0</pose>
           <geometry>
             <box>
-              <size>6.85 2.3 0.1</size>
+              <size>6.85 2.1 0.1</size>
             </box>
           </geometry>
         </collision>
@@ -139,7 +139,7 @@
           <pose>2.775 2.175 0.05 0 -0 0</pose>
           <geometry>
             <box>
-              <size>6.85 2.3 0.1</size>
+              <size>6.85 2.1 0.1</size>
             </box>
           </geometry>
           <material>
@@ -209,7 +209,7 @@
           <pose>2.775 2.175 0.05 0 -0 0</pose>
           <geometry>
             <box>
-              <size>6.85 2.3 0.1</size>
+              <size>6.85 2.1 0.1</size>
             </box>
           </geometry>
         </collision>
@@ -217,7 +217,7 @@
           <pose>2.775 2.175 0.05 0 -0 0</pose>
           <geometry>
             <box>
-              <size>6.85 2.3 0.1</size>
+              <size>6.85 2.1 0.1</size>
             </box>
           </geometry>
           <material>
@@ -287,7 +287,7 @@
           <pose>2.775 2.175 0.05 0 -0 0</pose>
           <geometry>
             <box>
-              <size>6.85 2.3 0.1</size>
+              <size>6.85 2.1 0.1</size>
             </box>
           </geometry>
         </collision>
@@ -295,7 +295,7 @@
           <pose>2.775 2.175 0.05 0 -0 0</pose>
           <geometry>
             <box>
-              <size>6.85 2.3 0.1</size>
+              <size>6.85 2.1 0.1</size>
             </box>
           </geometry>
           <material>
@@ -2721,12 +2721,11 @@
       <static>1</static>
     </model>
     <model name='elevator_1'>
-      <static>1</static>
+      <static>0</static>
       <pose>1.53185 4.325 0.0 0 0 -1.5708</pose>
       <link name='platform'>
         <pose>0 0 0.05 0 -0 0</pose>
         <gravity>0</gravity>
-        <kinematic>1</kinematic>
         <inertial>
           <mass>500</mass>
           <inertia>
@@ -2739,6 +2738,13 @@
           </inertia>
           <pose>0 0 0 0 -0 0</pose>
         </inertial>
+        <collision name='platform_collision'>
+          <geometry>
+            <box>
+              <size>2 1.7 0.1</size>
+            </box>
+          </geometry>
+        </collision>
         <visual name='platform_visual'>
           <geometry>
             <box>
@@ -2940,6 +2946,22 @@
         <enable_wind>0</enable_wind>
         <kinematic>1</kinematic>
       </link>
+      <joint name='elevator_joint' type='prismatic'>
+        <parent>world</parent>
+        <child>platform</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>-2.0</lower>
+            <upper>8.5</upper>
+            <effort>1e6</effort>
+            <velocity>5.0</velocity>
+          </limit>
+          <dynamics>
+            <damping>100</damping>
+          </dynamics>
+        </axis>
+      </joint>
       <joint name='platform_to_back_wall' type='fixed'>
         <parent>platform</parent>
         <child>back_wall</child>
@@ -2994,13 +3016,12 @@
         <floor_heights>[-0.1, 2.5, 5, 7.5]</floor_heights>
       </plugin>
     </model>
-    <model name='elevator_2'>
-      <static>1</static>
+    <!-- <model name='elevator_2'>
+      <static>0</static>
       <pose>4.01815 4.325 2.45 0 0 -1.5708</pose>
       <link name='platform'>
         <pose>0 0 0.05 0 -0 0</pose>
         <gravity>0</gravity>
-        <kinematic>1</kinematic>
         <inertial>
           <mass>500</mass>
           <inertia>
@@ -3013,6 +3034,13 @@
           </inertia>
           <pose>0 0 0 0 -0 0</pose>
         </inertial>
+        <collision name='platform_collision'>
+          <geometry>
+            <box>
+              <size>2 1.7 0.1</size>
+            </box>
+          </geometry>
+        </collision>
         <visual name='platform_visual'>
           <geometry>
             <box>
@@ -3269,12 +3297,11 @@
       </plugin>
     </model>
     <model name='elevator_3'>
-      <static>1</static>
+      <static>0</static>
       <pose>1.53185 0.025 4.95 0 -0 1.5708</pose>
       <link name='platform'>
         <pose>0 0 0.05 0 -0 0</pose>
         <gravity>0</gravity>
-        <kinematic>1</kinematic>
         <inertial>
           <mass>500</mass>
           <inertia>
@@ -3287,6 +3314,13 @@
           </inertia>
           <pose>0 0 0 0 -0 0</pose>
         </inertial>
+        <collision name='platform_collision'>
+          <geometry>
+            <box>
+              <size>2 1.7 0.1</size>
+            </box>
+          </geometry>
+        </collision>
         <visual name='platform_visual'>
           <geometry>
             <box>
@@ -3543,12 +3577,11 @@
       </plugin>
     </model>
     <model name='elevator_4'>
-      <static>1</static>
+      <static>0</static>
       <pose>4.01815 0.025 7.45 0 -0 1.5708</pose>
       <link name='platform'>
         <pose>0 0 0.05 0 -0 0</pose>
         <gravity>0</gravity>
-        <kinematic>1</kinematic>
         <inertial>
           <mass>500</mass>
           <inertia>
@@ -3561,6 +3594,13 @@
           </inertia>
           <pose>0 0 0 0 -0 0</pose>
         </inertial>
+        <collision name='platform_collision'>
+          <geometry>
+            <box>
+              <size>2 1.7 0.1</size>
+            </box>
+          </geometry>
+        </collision>
         <visual name='platform_visual'>
           <geometry>
             <box>
@@ -3815,7 +3855,7 @@
         <door_open_direction>-1</door_open_direction>
         <floor_heights>[-0.1, 2.5, 5, 7.5]</floor_heights>
       </plugin>
-    </model>
+    </model> -->
     <gui fullscreen='0'>
       <camera name='user_camera'>
         <pose>14.0849 -80.744 18.707 0 0.311643 1.4122</pose>
