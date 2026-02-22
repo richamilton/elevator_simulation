@@ -456,8 +456,8 @@ private:
         auto *vel_cmd = _ecm.Component<ignition::gazebo::components::JointVelocityCmd>(this->elevator_joint);
         double current_vel_cmd = vel_cmd ? vel_cmd->Data()[0] : 0.0;
 
-        this->current_z = std::round(this->current_z * 1000.0) / 1000.0;
-        if (this->current_z <= target_z || (this->current_z == 0))
+        // this->current_z = std::round(this->current_z * 1000.0) / 1000.0;
+        if (this->current_z <= target_z)
         {
             // // Hard-snap current_z to eliminate any accumulated floating point drift
             // this->SetElevatorHeight(_ecm, target_z);
