@@ -28,67 +28,75 @@
     <model name='ground_plane'>
       <static>1</static>
       <link name='link'>
-        <collision name='gnd_south_col'>
-          <pose>0.000 -25.560 -0.05 0 0 0</pose>
+        <collision name='gnd_s1_col'>
+          <pose>0.000 -25.512 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>100.000 48.880 0.1</size>
+              <size>100.000 48.975 0.1</size>
             </box>
           </geometry>
         </collision>
-        <collision name='gnd_south_left_col'>
-          <pose>-24.735 0.025 -0.05 0 0 0</pose>
+        <collision name='gnd_s2_left_col'>
+          <pose>-24.684 0.025 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>50.530 2.290 0.1</size>
+              <size>50.632 2.100 0.1</size>
             </box>
           </geometry>
         </collision>
-        <collision name='gnd_south_right_col'>
-          <pose>27.510 0.025 -0.05 0 0 0</pose>
+        <collision name='gnd_s2_mid_col'>
+          <pose>2.775 0.025 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>44.980 2.290 0.1</size>
+              <size>0.686 2.100 0.1</size>
             </box>
           </geometry>
         </collision>
-        <collision name='gnd_middle_col'>
+        <collision name='gnd_s2_right_col'>
+          <pose>27.459 0.025 -0.05 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>45.082 2.100 0.1</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name='gnd_mid_col'>
           <pose>0.000 2.175 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>100.000 2.010 0.1</size>
+              <size>100.000 2.200 0.1</size>
             </box>
           </geometry>
         </collision>
-        <collision name='gnd_north_left_col'>
-          <pose>-24.735 4.330 -0.05 0 0 0</pose>
+        <collision name='gnd_n_left_col'>
+          <pose>-24.684 4.325 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>50.530 2.300 0.1</size>
+              <size>50.632 2.100 0.1</size>
             </box>
           </geometry>
         </collision>
-        <collision name='gnd_north_right_col'>
-          <pose>27.510 4.330 -0.05 0 0 0</pose>
+        <collision name='gnd_n_right_col'>
+          <pose>26.216 4.325 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>44.980 2.300 0.1</size>
+              <size>47.568 2.100 0.1</size>
             </box>
           </geometry>
         </collision>
-        <collision name='gnd_north_col'>
-          <pose>0.000 27.740 -0.05 0 0 0</pose>
+        <collision name='gnd_n1_col'>
+          <pose>0.000 27.688 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>100.000 44.520 0.1</size>
+              <size>100.000 44.625 0.1</size>
             </box>
           </geometry>
         </collision>
-        <visual name='gnd_south_vis'>
-          <pose>0.000 -25.560 -0.05 0 0 0</pose>
+        <visual name='gnd_s1_vis'>
+          <pose>0.000 -25.512 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>100.000 48.880 0.1</size>
+              <size>100.000 48.975 0.1</size>
             </box>
           </geometry>
           <material>
@@ -97,11 +105,11 @@
             <specular>0.1 0.1 0.1 1</specular>
           </material>
         </visual>
-        <visual name='gnd_south_left_vis'>
-          <pose>-24.735 0.025 -0.05 0 0 0</pose>
+        <visual name='gnd_s2_left_vis'>
+          <pose>-24.684 0.025 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>50.530 2.290 0.1</size>
+              <size>50.632 2.100 0.1</size>
             </box>
           </geometry>
           <material>
@@ -110,11 +118,11 @@
             <specular>0.1 0.1 0.1 1</specular>
           </material>
         </visual>
-        <visual name='gnd_south_right_vis'>
-          <pose>27.510 0.025 -0.05 0 0 0</pose>
+        <visual name='gnd_s2_mid_vis'>
+          <pose>2.775 0.025 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>44.980 2.290 0.1</size>
+              <size>0.686 2.100 0.1</size>
             </box>
           </geometry>
           <material>
@@ -123,11 +131,24 @@
             <specular>0.1 0.1 0.1 1</specular>
           </material>
         </visual>
-        <visual name='gnd_middle_vis'>
+        <visual name='gnd_s2_right_vis'>
+          <pose>27.459 0.025 -0.05 0 0 0</pose>
+          <geometry>
+            <box>
+              <size>45.082 2.100 0.1</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.7 0.7 0.7 1</ambient>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+        <visual name='gnd_mid_vis'>
           <pose>0.000 2.175 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>100.000 2.010 0.1</size>
+              <size>100.000 2.200 0.1</size>
             </box>
           </geometry>
           <material>
@@ -136,11 +157,11 @@
             <specular>0.1 0.1 0.1 1</specular>
           </material>
         </visual>
-        <visual name='gnd_north_left_vis'>
-          <pose>-24.735 4.330 -0.05 0 0 0</pose>
+        <visual name='gnd_n_left_vis'>
+          <pose>-24.684 4.325 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>50.530 2.300 0.1</size>
+              <size>50.632 2.100 0.1</size>
             </box>
           </geometry>
           <material>
@@ -149,11 +170,11 @@
             <specular>0.1 0.1 0.1 1</specular>
           </material>
         </visual>
-        <visual name='gnd_north_right_vis'>
-          <pose>27.510 4.330 -0.05 0 0 0</pose>
+        <visual name='gnd_n_right_vis'>
+          <pose>26.216 4.325 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>44.980 2.300 0.1</size>
+              <size>47.568 2.100 0.1</size>
             </box>
           </geometry>
           <material>
@@ -162,11 +183,11 @@
             <specular>0.1 0.1 0.1 1</specular>
           </material>
         </visual>
-        <visual name='gnd_north_vis'>
-          <pose>0.000 27.740 -0.05 0 0 0</pose>
+        <visual name='gnd_n1_vis'>
+          <pose>0.000 27.688 -0.05 0 0 0</pose>
           <geometry>
             <box>
-              <size>100.000 44.520 0.1</size>
+              <size>100.000 44.625 0.1</size>
             </box>
           </geometry>
           <material>
@@ -256,7 +277,7 @@
           <pose>2.775 2.175 0.05 0 -0 0</pose>
           <geometry>
             <box>
-              <size>6.85 2.1 0.1</size>
+              <size>6.85 2.3 0.1</size>
             </box>
           </geometry>
         </collision>
@@ -264,7 +285,7 @@
           <pose>2.775 2.175 0.05 0 -0 0</pose>
           <geometry>
             <box>
-              <size>6.85 2.1 0.1</size>
+              <size>6.85 2.3 0.1</size>
             </box>
           </geometry>
           <material>
@@ -334,7 +355,7 @@
           <pose>2.775 2.175 0.05 0 -0 0</pose>
           <geometry>
             <box>
-              <size>6.85 2.1 0.1</size>
+              <size>6.85 2.3 0.1</size>
             </box>
           </geometry>
         </collision>
@@ -342,7 +363,7 @@
           <pose>2.775 2.175 0.05 0 -0 0</pose>
           <geometry>
             <box>
-              <size>6.85 2.1 0.1</size>
+              <size>6.85 2.3 0.1</size>
             </box>
           </geometry>
           <material>
@@ -412,7 +433,7 @@
           <pose>2.775 2.175 0.05 0 -0 0</pose>
           <geometry>
             <box>
-              <size>6.85 2.1 0.1</size>
+              <size>6.85 2.3 0.1</size>
             </box>
           </geometry>
         </collision>
@@ -420,7 +441,7 @@
           <pose>2.775 2.175 0.05 0 -0 0</pose>
           <geometry>
             <box>
-              <size>6.85 2.1 0.1</size>
+              <size>6.85 2.3 0.1</size>
             </box>
           </geometry>
           <material>
@@ -3141,9 +3162,9 @@
         <floor_heights>[-0.1, 2.5, 5, 7.5]</floor_heights>
       </plugin>
     </model>
-    <!-- <model name='elevator_2'>
+    <model name='elevator_2'>
       <static>0</static>
-      <pose>4.01815 4.325 2.45 0 0 -1.5708</pose>
+      <pose>4.01815 4.325 0.0 0 0 -1.5708</pose>
       <link name='platform'>
         <pose>0 0 0.05 0 -0 0</pose>
         <gravity>0</gravity>
@@ -3367,6 +3388,22 @@
         <enable_wind>0</enable_wind>
         <kinematic>1</kinematic>
       </link>
+      <joint name='elevator_joint' type='prismatic'>
+        <parent>world</parent>
+        <child>platform</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>-2.0</lower>
+            <upper>8.5</upper>
+            <effort>1e6</effort>
+            <velocity>5.0</velocity>
+          </limit>
+          <dynamics>
+            <damping>100</damping>
+          </dynamics>
+        </axis>
+      </joint>
       <joint name='platform_to_back_wall' type='fixed'>
         <parent>platform</parent>
         <child>back_wall</child>
@@ -3415,7 +3452,7 @@
         <stop_duration_max>15.0</stop_duration_max>
         <door_open_width>1.4</door_open_width>
         <stop_duration_multiplier>1.2</stop_duration_multiplier>
-        <initial_floor>1</initial_floor>
+        <initial_floor>0</initial_floor>
         <initial_doors_open>1</initial_doors_open>
         <door_open_direction>1</door_open_direction>
         <floor_heights>[-0.1, 2.5, 5, 7.5]</floor_heights>
@@ -3423,7 +3460,7 @@
     </model>
     <model name='elevator_3'>
       <static>0</static>
-      <pose>1.53185 0.025 4.95 0 -0 1.5708</pose>
+      <pose>1.53185 0.025 0.0 0 -0 1.5708</pose>
       <link name='platform'>
         <pose>0 0 0.05 0 -0 0</pose>
         <gravity>0</gravity>
@@ -3647,6 +3684,22 @@
         <enable_wind>0</enable_wind>
         <kinematic>1</kinematic>
       </link>
+      <joint name='elevator_joint' type='prismatic'>
+        <parent>world</parent>
+        <child>platform</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>-2.0</lower>
+            <upper>8.5</upper>
+            <effort>1e6</effort>
+            <velocity>5.0</velocity>
+          </limit>
+          <dynamics>
+            <damping>100</damping>
+          </dynamics>
+        </axis>
+      </joint>
       <joint name='platform_to_back_wall' type='fixed'>
         <parent>platform</parent>
         <child>back_wall</child>
@@ -3695,7 +3748,7 @@
         <stop_duration_max>15.0</stop_duration_max>
         <door_open_width>1.4</door_open_width>
         <stop_duration_multiplier>0.8</stop_duration_multiplier>
-        <initial_floor>2</initial_floor>
+        <initial_floor>0</initial_floor>
         <initial_doors_open>0</initial_doors_open>
         <door_open_direction>1</door_open_direction>
         <floor_heights>[-0.1, 2.5, 5, 7.5]</floor_heights>
@@ -3703,7 +3756,7 @@
     </model>
     <model name='elevator_4'>
       <static>0</static>
-      <pose>4.01815 0.025 7.45 0 -0 1.5708</pose>
+      <pose>4.01815 0.025 0.0 0 -0 1.5708</pose>
       <link name='platform'>
         <pose>0 0 0.05 0 -0 0</pose>
         <gravity>0</gravity>
@@ -3927,6 +3980,22 @@
         <enable_wind>0</enable_wind>
         <kinematic>1</kinematic>
       </link>
+      <joint name='elevator_joint' type='prismatic'>
+        <parent>world</parent>
+        <child>platform</child>
+        <axis>
+          <xyz>0 0 1</xyz>
+          <limit>
+            <lower>-2.0</lower>
+            <upper>8.5</upper>
+            <effort>1e6</effort>
+            <velocity>5.0</velocity>
+          </limit>
+          <dynamics>
+            <damping>100</damping>
+          </dynamics>
+        </axis>
+      </joint>
       <joint name='platform_to_back_wall' type='fixed'>
         <parent>platform</parent>
         <child>back_wall</child>
@@ -3975,12 +4044,12 @@
         <stop_duration_max>15.0</stop_duration_max>
         <door_open_width>1.4</door_open_width>
         <stop_duration_multiplier>1.1</stop_duration_multiplier>
-        <initial_floor>3</initial_floor>
+        <initial_floor>0</initial_floor>
         <initial_doors_open>1</initial_doors_open>
         <door_open_direction>-1</door_open_direction>
         <floor_heights>[-0.1, 2.5, 5, 7.5]</floor_heights>
       </plugin>
-    </model> -->
+    </model>
     <gui fullscreen='0'>
       <camera name='user_camera'>
         <pose>14.0849 -80.744 18.707 0 0.311643 1.4122</pose>

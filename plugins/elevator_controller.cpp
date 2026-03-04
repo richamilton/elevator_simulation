@@ -115,6 +115,7 @@ public:
 
         this->target_floor = this->current_floor;
         this->current_z = this->floor_heights[this->current_floor];
+        this->move_origin_z = this->current_z;
         this->stop_duration_dist = std::uniform_real_distribution<double>(
             this->stop_duration_min, this->stop_duration_max);
         this->stop_duration = GetRandomStopDuration();
@@ -167,7 +168,6 @@ public:
 
         // Set initial state
         // Note: WorldPose is not available in Configure - it will be initialized in PreUpdate
-        SetElevatorHeight(_ecm, this->floor_heights[this->current_floor]);
         SetDoorPosition(_ecm, this->doors_open ? this->door_open_position : 0.0);
 
         this->current_floor_pub = this->ros_node->create_publisher<std_msgs::msg::Int32>(
@@ -224,18 +224,19 @@ public:
                 this->initial_pose = ignition::math::Pose3d(
                     p.Pos().X(),
                     p.Pos().Y(),
-                    this->floor_heights[this->current_floor] - 0.05,
+                    - 0.15,
                     p.Rot().Roll(),
                     p.Rot().Pitch(),
                     p.Rot().Yaw()
                 );
                 this->pose_initialized = true;
                 this->SetElevatorPosition(_ecm, this->initial_pose.Pos().Z());
-                this->SetElevatorHeight(_ecm, this->initial_pose.Pos().Z());
+                // this->SetElevatorHeight(_ecm, this->initial_pose.Pos().Z());
                 
                 RCLCPP_WARN(this->ros_node->get_logger(),
                     "Elevator %d: pose locked X=%f Y=%f Z=%f",
                     elevator_id, p.Pos().X(), p.Pos().Y(), this->initial_pose.Pos().Z());
+                
                 
             }
             // Don't run state machine or apply commands until pose is known
@@ -421,6 +422,8 @@ private:
     {
         double target_z = this->floor_heights[this->target_floor];
         this->current_z = _ecm.Component<ignition::gazebo::components::JointPosition>(this->elevator_joint)->Data()[0];
+        // RCLCPP_INFO(ros_node->get_logger(),
+        //         "Elevator %d: current z %f", elevator_id, this->current_z);
         if (this->current_z >= target_z)
         {
             // // Hard-snap current_z to eliminate any accumulated floating point drift
@@ -432,8 +435,8 @@ private:
             this->current_floor = this->target_floor;
             this->current_state = OPENING_DOORS;
             this->state_start_time = sim_time;
-            RCLCPP_INFO(ros_node->get_logger(),
-                "Elevator %d: arrived at floor %d", elevator_id, current_floor);
+            // RCLCPP_INFO(ros_node->get_logger(),
+            //     "Elevator %d: arrived at floor %d at %f", elevator_id, current_floor, this->current_z);
         }
         else {
             // Determine velocity based on trapezoidal profile
@@ -451,10 +454,8 @@ private:
 
         double target_z = this->floor_heights[this->target_floor];
         this->current_z = _ecm.Component<ignition::gazebo::components::JointPosition>(this->elevator_joint)->Data()[0];
-
-        // Check if velocity command component exists
-        auto *vel_cmd = _ecm.Component<ignition::gazebo::components::JointVelocityCmd>(this->elevator_joint);
-        double current_vel_cmd = vel_cmd ? vel_cmd->Data()[0] : 0.0;
+        // RCLCPP_INFO(ros_node->get_logger(),
+        //         "Elevator %d: current z %f", elevator_id, this->current_z);
 
         // this->current_z = std::round(this->current_z * 1000.0) / 1000.0;
         if (this->current_z <= target_z)
@@ -468,8 +469,8 @@ private:
             this->current_floor = this->target_floor;
             this->current_state = OPENING_DOORS;
             this->state_start_time = sim_time;
-            RCLCPP_INFO(ros_node->get_logger(),
-            "Elevator %d: arrived at floor %d", elevator_id, current_floor);
+            // RCLCPP_INFO(ros_node->get_logger(),
+            //     "Elevator %d: arrived at floor %d at %f", elevator_id, current_floor, this->current_z);
         }
         else {
             // Determine velocity based on trapezoidal profile
@@ -478,9 +479,6 @@ private:
             double v = TrapezoidalVelocity(std::max(dist_travelled, 0.0), dist_remaining);
             // Apply velocity command to move the elevator down
             this->SetElevatorVelocity(_ecm, -v);
-            RCLCPP_INFO(ros_node->get_logger(),
-            "Elevator %d: moving down v_cmd=%.3f actual_v_cmd=%.3f current_z=%.3f target_z=%.3f",
-            elevator_id, -v, current_vel_cmd, this->current_z, target_z);
         }
     }
 
@@ -493,14 +491,14 @@ private:
             this->doors_open = true;
             SetDoorPosition(_ecm, this->door_open_position);
             // Hard-snap current_z to eliminate any accumulated floating point drift
-            this->current_z = this->floor_heights[this->current_floor];
+            // this->current_z = this->floor_heights[this->current_floor];
             this->current_state = IDLE;
             this->state_start_time = sim_time;
             this->stop_duration = GetRandomStopDuration();
             RCLCPP_INFO(ros_node->get_logger(),
                 "Elevator %d: door open at floor %d", elevator_id, current_floor);
-        }
-        else
+    }
+    else
         {
             SetDoorPosition(_ecm, progress * this->door_open_position);
         }
