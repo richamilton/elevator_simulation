@@ -445,13 +445,6 @@ private:
             double v = TrapezoidalVelocity(std::max(dist_travelled, 0.0), dist_remaining);
             // Apply velocity command to move the elevator up
             this->SetElevatorVelocity(_ecm, v);
-
-            // TODO: Remove ONLY for debugging
-            // auto vel_cmd = _ecm.Component<ignition::gazebo::components::JointVelocityCmd>(this->elevator_joint);
-            // double current_vel_cmd = vel_cmd ? vel_cmd->Data()[0] : 0.0;
-            // RCLCPP_INFO(ros_node->get_logger(),
-            //     "Elevator %d: moving up v_cmd=%.3f actual_v_cmd=%.3f current_z=%.3f target_z=%.3f",
-            //     elevator_id, v, current_vel_cmd, this->current_z, target_z);
         }
     }
 
@@ -486,13 +479,6 @@ private:
             double v = TrapezoidalVelocity(std::max(dist_travelled, 0.0), dist_remaining);
             // Apply velocity command to move the elevator down
             this->SetElevatorVelocity(_ecm, -v);
-
-            // TODO: Remove ONLY for debugging
-            // auto vel_cmd = _ecm.Component<ignition::gazebo::components::JointVelocityCmd>(this->elevator_joint);
-            // double current_vel_cmd = vel_cmd ? vel_cmd->Data()[0] : 0.0;
-            // RCLCPP_INFO(ros_node->get_logger(),
-            //     "Elevator %d: moving down v_cmd=%.3f actual_v_cmd=%.3f current_z=%.3f target_z=%.3f",
-            //     elevator_id, -v, current_vel_cmd, this->current_z, target_z);
         }
     }
 
