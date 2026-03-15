@@ -1,6 +1,8 @@
 #include <ignition/gazebo/System.hh>
 #include <ignition/gazebo/Model.hh>
 #include <ignition/gazebo/Util.hh>
+#include <cmath>
+#include <algorithm>
 #include <ignition/gazebo/components/JointPosition.hh>
 #include <ignition/gazebo/components/JointPositionReset.hh>
 #include <ignition/gazebo/components/JointVelocityCmd.hh>
