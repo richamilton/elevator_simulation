@@ -72,7 +72,7 @@ def generate_launch_description():
     declare_gz_gui = DeclareLaunchArgument(
         "gz_gui",
         default_value=PathJoinSubstitution(
-            [FindPackageShare("husarion_gz_worlds"), "config", "teleop.config"]
+            [FindPackageShare("avdr_gz_worlds"), "config", "teleop.config"]
         ),
         description="Run simulation with specific GUI layout.",
     )

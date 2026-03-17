@@ -31,9 +31,7 @@ ament_target_dependencies(elevator_controller
   example_interfaces
 )
 
-target_include_directories(elevator_controller PRIVATE
-  /usr/include/ignition/gazebo6
-)
+# Include directories are provided transitively by ignition-gazebo6 imported target
 
 target_link_libraries(elevator_controller
   ignition-gazebo6::ignition-gazebo6

@@ -93,6 +93,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             set_plugin_path,
+            clear_gazebo_plugin_path,
             declare_world_name,
             declare_gz_headless_mode,
             declare_gz_log_level,
