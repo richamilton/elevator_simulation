@@ -13,14 +13,11 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
-find_package(gazebo_ros REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
-find_package(gazebo REQUIRED)
 find_package(example_interfaces REQUIRED)
-
-# Include directories
-include_directories(${GAZEBO_INCLUDE_DIRS})
+find_package(ignition-gazebo6 REQUIRED)
+find_package(ignition-plugin1 REQUIRED COMPONENTS loader register)
 
 # Elevator controller plugin (C++)
 add_library(elevator_controller SHARED
@@ -31,11 +28,15 @@ ament_target_dependencies(elevator_controller
   rclcpp
   std_msgs
   geometry_msgs
-  gazebo_ros
   example_interfaces
 )
 
-target_link_libraries(elevator_controller ${GAZEBO_LIBRARIES})
+# Include directories are provided transitively by ignition-gazebo6 imported target
+
+target_link_libraries(elevator_controller
+  ignition-gazebo6::ignition-gazebo6
+  ignition-plugin1::ignition-plugin1
+)
 
 # Install C++ plugin
 install(TARGETS elevator_controller
