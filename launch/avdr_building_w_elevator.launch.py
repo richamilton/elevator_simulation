@@ -52,20 +52,20 @@ def launch_setup(context):
         launch_arguments={"gz_args": gz_args, "on_exit_shutdown": "true"}.items()
     )
 
-    # Start elevator scheduler after building + elevators are fully spawned
-    elevator_scheduler = TimerAction(
-        period=16.0,
-        actions=[
-            Node(
-                package='avdr_gz_worlds',
-                executable='elevator_scheduler.py',
-                name='elevator_scheduler',
-                output='screen',
-            )
-        ]
-    )
+    # # Start elevator scheduler after building + elevators are fully spawned
+    # elevator_scheduler = TimerAction(
+    #     period=16.0,
+    #     actions=[
+    #         Node(
+    #             package='avdr_gz_worlds',
+    #             executable='elevator_scheduler.py',
+    #             name='elevator_scheduler',
+    #             output='screen',
+    #         )
+    #     ]
+    # )
 
-    return [gz_sim, elevator_scheduler]
+    return [gz_sim]
 
 
 def generate_launch_description():
